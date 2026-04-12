@@ -1,4 +1,4 @@
-import { Group, Panel, Separator } from "react-resizable-panels";
+import { Group, Panel, Separator, usePanelRef, useGroupRef } from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 import type { ComponentProps } from "react";
 
@@ -29,4 +29,4 @@ function ResizableHandle({ className, withHandle = true, ...props }: ResizableHa
   );
 }
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
+export { ResizablePanelGroup, ResizablePanel, ResizableHandle, usePanelRef, useGroupRef };

@@ -369,10 +369,14 @@ function SectionLocal() {
             </Button>
           )}
         </div>
-        <div className="rounded-lg border bg-muted/40 p-3">
-          <p className="text-xs font-medium text-muted-foreground mb-1.5">Как запустить:</p>
+        <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">При разработке:</p>
           <code className="block rounded bg-background border px-3 py-2 text-xs font-mono select-all">
-            opencode serve --port 4096 --cors http://localhost:5173
+            pnpm dev
+          </code>
+          <p className="text-xs font-medium text-muted-foreground">Только сервер OpenCode:</p>
+          <code className="block rounded bg-background border px-3 py-2 text-xs font-mono select-all">
+            pnpm exec opencode serve --port 4096 --cors http://localhost:5173
           </code>
         </div>
         {connection.connected && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import {
   Download,
   GitBranch as GithubIcon,
@@ -7,9 +7,19 @@ import {
   WifiOff,
   AlertCircle,
   Plus,
+  X,
+  FolderTree,
+  History,
+  PanelBottom,
+  MessagesSquare,
+  Columns2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { FileTree } from "@/components/file-tree/file-tree";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { VersionList } from "@/components/version-list/version-list";
@@ -21,28 +31,57 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  usePanelRef,
 } from "@/components/ui/resizable";
+import type { PanelImperativeHandle } from "react-resizable-panels";
+import type { RefObject } from "react";
+
+function togglePanel(ref: RefObject<PanelImperativeHandle | null>) {
+  const p = ref.current;
+  if (!p) return;
+  if (p.isCollapsed()) p.expand();
+  else p.collapse();
+}
 
 export function WorkspacePage() {
-  const { labId } = useParams({ from: "/app/workspace/$labId" });
-  const search    = useSearch({ from: "/app/workspace/$labId" });
+  const { labId } = useParams({ strict: false });
+  const search    = useSearch({ strict: false });
   const navigate  = useNavigate();
 
-  const { activeFile, setActiveFile } = useWorkspaceStore();
+  const sidebarPanelRef  = usePanelRef();
+  const filesPanelRef    = usePanelRef();
+  const versionsPanelRef = usePanelRef();
+  const previewPanelRef  = usePanelRef();
+  const chatPanelRef     = usePanelRef();
+
+  const {
+    activeFile,
+    setActiveFile,
+    openTabPaths,
+    closeEditorTab,
+    resetEditorTabs,
+  } = useWorkspaceStore();
   const { connected }  = useConnectionStore((s) => s.connection);
 
   const lab       = useLabsStore((s) => s.labs.find((l) => l.id === labId));
   const updateLab = useLabsStore((s) => s.updateLab);
 
-  // Resolve sessionId & directory from search params OR from persisted lab
-  const sessionId = search.sessionId ?? lab?.sessionId;
-  const directory = search.directory ?? lab?.directory;
+  const sessionId = lab?.sessionId ?? search.sessionId;
+  const directory = lab?.directory ?? search.directory;
+  const searchSessionMatches =
+    !search.sessionId || search.sessionId === sessionId;
+  const initialPrompt = searchSessionMatches ? search.initialPrompt : undefined;
+  const systemFromSearch = searchSessionMatches ? search.system : undefined;
 
-  // Persist session/directory to lab if they came from search
   useEffect(() => {
+    if (!labId) return;
     if (search.sessionId && !lab?.sessionId) updateLab(labId, { sessionId: search.sessionId });
     if (search.directory && !lab?.directory)  updateLab(labId, { directory: search.directory });
   }, [labId, search.sessionId, search.directory, lab?.sessionId, lab?.directory, updateLab]);
+
+  useEffect(() => {
+    resetEditorTabs();
+  }, [labId, resetEditorTabs]);
 
   // Tab: "code" | "typst". Auto-switch to typst when .typ file selected
   const [activeTab, setActiveTab] = useState<"code" | "typst">("code");
@@ -80,7 +119,78 @@ export function WorkspacePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => togglePanel(sidebarPanelRef)}
+                type="button"
+              >
+                <Columns2 className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Левая колонка</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => togglePanel(filesPanelRef)}
+                type="button"
+              >
+                <FolderTree className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Файлы</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => togglePanel(versionsPanelRef)}
+                type="button"
+              >
+                <History className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Версии</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => togglePanel(previewPanelRef)}
+                type="button"
+              >
+                <PanelBottom className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Превью</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => togglePanel(chatPanelRef)}
+                type="button"
+              >
+                <MessagesSquare className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Чат</TooltipContent>
+          </Tooltip>
+          <div className="mx-1 h-4 w-px bg-border" />
           <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
             <Download className="h-3 w-3" />
             Скачать
@@ -117,53 +227,120 @@ export function WorkspacePage() {
       <div className="min-h-0 flex-1">
         <ResizablePanelGroup orientation="horizontal">
 
-          {/* Left: file tree + versions */}
-          <ResizablePanel defaultSize="20%" minSize="12%" maxSize="30%">
-            <div className="flex h-full flex-col">
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <FileTree directory={directory} sessionId={sessionId} />
-              </div>
-              <Separator />
-              <div className="h-44 shrink-0 overflow-hidden">
-                <VersionList sessionId={sessionId} />
-              </div>
-            </div>
+          <ResizablePanel
+            id="ws-sidebar"
+            panelRef={sidebarPanelRef}
+            defaultSize="20%"
+            minSize="8%"
+            maxSize="40%"
+            collapsible
+            collapsedSize={0}
+          >
+            <ResizablePanelGroup orientation="vertical" className="h-full">
+              <ResizablePanel
+                id="ws-files"
+                panelRef={filesPanelRef}
+                defaultSize="62%"
+                minSize="12%"
+                collapsible
+                collapsedSize={0}
+                className="min-h-0"
+              >
+                <FileTree key={labId} directory={directory} sessionId={sessionId} />
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              <ResizablePanel
+                id="ws-versions"
+                panelRef={versionsPanelRef}
+                defaultSize="38%"
+                minSize="10%"
+                maxSize="55%"
+                collapsible
+                collapsedSize={0}
+                className="min-h-0"
+              >
+                <VersionList key={labId} sessionId={sessionId} directory={directory} />
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
           {/* Center: editor + preview */}
-          <ResizablePanel defaultSize="53%" minSize="30%">
-            <ResizablePanelGroup orientation="vertical">
-              <ResizablePanel defaultSize="60%" minSize="20%">
+          <ResizablePanel id="ws-center" defaultSize="53%" minSize="25%">
+            <ResizablePanelGroup orientation="vertical" className="h-full">
+              <ResizablePanel id="ws-editor" defaultSize="60%" minSize="20%" className="min-h-0">
                 <div className="flex h-full flex-col">
                   {/* Tab bar */}
-                  <div className="flex h-9 shrink-0 items-center border-b px-2 gap-1">
+                  <div className="flex h-9 shrink-0 min-w-0 items-center border-b gap-0">
+                    <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto">
+                      {openTabPaths.length === 0 ? (
+                        <button
+                          type="button"
+                          className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                            activeTab === "code"
+                              ? "bg-muted text-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                          onClick={() => setActiveTab("code")}
+                        >
+                          Редактор
+                        </button>
+                      ) : (
+                        openTabPaths.map((path) => {
+                          const label = path.split("/").pop() ?? path;
+                          const isActive = activeTab === "code" && activeFile === path;
+                          return (
+                            <div
+                              key={path}
+                              className={`flex shrink-0 items-stretch border-r border-border/60 ${
+                                isActive ? "bg-muted" : "bg-transparent"
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                className={`max-w-[140px] truncate px-2.5 py-1.5 text-left text-xs font-medium transition-colors ${
+                                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                                }`}
+                                title={path}
+                                onClick={() => {
+                                  setActiveTab("code");
+                                  setActiveFile(path);
+                                }}
+                              >
+                                {label}
+                              </button>
+                              <button
+                                type="button"
+                                className="flex w-7 items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                title="Закрыть вкладку"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  closeEditorTab(path);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                     <button
-                      className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
-                        activeTab === "code"
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => { setActiveTab("code"); }}
-                    >
-                      {activeFile && activeTab === "code"
-                        ? activeFile.split("/").pop()
-                        : "Редактор"}
-                    </button>
-                    <button
-                      className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                      type="button"
+                      className={`shrink-0 border-l border-border/60 px-3 py-1.5 text-xs font-medium transition-colors ${
                         activeTab === "typst"
                           ? "bg-muted text-foreground"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                       onClick={() => {
                         setActiveTab("typst");
-                        // When switching to typst tab, select the typst file
                         if (!activeFile?.endsWith(".typ")) setActiveFile(typstFile);
                       }}
                     >
-                      docs/index.typ
+                      Typst
                     </button>
                   </div>
 
@@ -189,7 +366,15 @@ export function WorkspacePage() {
 
               <ResizableHandle withHandle />
 
-              <ResizablePanel defaultSize="40%" minSize="15%">
+              <ResizablePanel
+                id="ws-preview"
+                panelRef={previewPanelRef}
+                defaultSize="40%"
+                minSize="12%"
+                collapsible
+                collapsedSize={0}
+                className="min-h-0"
+              >
                 <div className="flex h-full items-center justify-center border-t bg-muted/20 text-muted-foreground text-sm">
                   {activeTab === "typst"
                     ? "Typst Preview (WASM)"
@@ -202,12 +387,22 @@ export function WorkspacePage() {
           <ResizableHandle withHandle />
 
           {/* Right: chat */}
-          <ResizablePanel defaultSize="27%" minSize="20%" maxSize="45%">
+          <ResizablePanel
+            id="ws-chat"
+            panelRef={chatPanelRef}
+            defaultSize="27%"
+            minSize="12%"
+            maxSize="50%"
+            collapsible
+            collapsedSize={0}
+            className="min-h-0"
+          >
             <ChatPanel
+              key={labId}
               sessionId={sessionId}
               directory={directory}
-              initialPrompt={search.initialPrompt}
-              systemPrompt={search.system}
+              initialPrompt={initialPrompt}
+              systemPrompt={systemFromSearch}
             />
           </ResizablePanel>
 

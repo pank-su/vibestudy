@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import MonacoEditor, { useMonaco } from "@monaco-editor/react";
+import MonacoEditor, { useMonaco, type BeforeMount } from "@monaco-editor/react";
 import { Loader2, Save, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFileContent, qk } from "@/lib/opencode-client";
 import { useConnectionStore } from "@/stores/connection";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/use-theme";
+import { defineVibestudyMonacoThemes, monacoThemeId } from "@/lib/monaco-theme";
 
 // ── language detection ─────────────────────────────────────────────────────
 
@@ -77,10 +78,14 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
 
   const isDirty = localContent !== savedContent;
 
-  // Monaco theme sync
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    defineVibestudyMonacoThemes(monaco);
+  };
+
   useEffect(() => {
     if (!monaco) return;
-    monaco.editor.setTheme(theme === "dark" ? "vs-dark" : "vs");
+    defineVibestudyMonacoThemes(monaco);
+    monaco.editor.setTheme(monacoThemeId(theme));
   }, [monaco, theme]);
 
   const handleSave = useCallback(async () => {
@@ -176,7 +181,8 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
           height="100%"
           language={language}
           value={localContent}
-          theme={theme === "dark" ? "vs-dark" : "vs"}
+          theme={monacoThemeId(theme)}
+          beforeMount={handleBeforeMount}
           onChange={(val) => setLocalContent(val ?? "")}
           options={{
             fontSize: 13,

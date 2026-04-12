@@ -26,6 +26,7 @@ import {
 import { useConnectionStore } from "@/stores/connection";
 import { useLabsStore, type Lab } from "@/stores/labs";
 import { useTheme } from "@/hooks/use-theme";
+import { OpenCodeConnectionGate } from "@/components/layout/opencode-connection-gate";
 
 const PANEL_WIDTH = 240;
 
@@ -282,7 +283,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 key={lab.id}
                                 lab={lab}
                                 isActive={currentLabId === lab.id}
-                                onClick={() => navigate({ to: "/workspace/$labId", params: { labId: lab.id }, search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined } })}
+                                onClick={() =>
+                                  navigate({
+                                    to: "/workspace/$labId",
+                                    params: { labId: lab.id },
+                                    search: {
+                                      sessionId: lab.sessionId,
+                                      directory: lab.directory,
+                                      initialPrompt: undefined,
+                                      system: undefined,
+                                    },
+                                  })
+                                }
                                 onDelete={(e) => { e.stopPropagation(); setPendingDelete(lab); }}
                                 onRename={(name) => updateLab(lab.id, { name })}
                               />
@@ -307,7 +319,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 key={lab.id}
                                 lab={lab}
                                 isActive={currentLabId === lab.id}
-                                onClick={() => navigate({ to: "/workspace/$labId", params: { labId: lab.id }, search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined } })}
+                                onClick={() =>
+                                  navigate({
+                                    to: "/workspace/$labId",
+                                    params: { labId: lab.id },
+                                    search: {
+                                      sessionId: lab.sessionId,
+                                      directory: lab.directory,
+                                      initialPrompt: undefined,
+                                      system: undefined,
+                                    },
+                                  })
+                                }
                                 onDelete={(e) => { e.stopPropagation(); setPendingDelete(lab); }}
                                 onRename={(name) => updateLab(lab.id, { name })}
                               />
@@ -379,6 +402,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Main content */}
         <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <OpenCodeConnectionGate />
           {children}
         </main>
 
