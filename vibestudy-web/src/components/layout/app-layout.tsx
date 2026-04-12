@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useRouter, useNavigate } from "@tanstack/react-router";
 import {
   Settings,
@@ -11,6 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Pencil,
+  FolderOpen,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,46 +43,156 @@ function LabItem({
   isActive,
   onClick,
   onDelete,
+  onRename,
 }: {
   lab: Lab;
   isActive: boolean;
   onClick: () => void;
   onDelete: (e: React.MouseEvent) => void;
+  onRename: (newName: string) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft]     = useState(lab.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(lab.name); }, [lab.name]);
+
+  function startEdit(e: React.MouseEvent) {
+    e.stopPropagation();
+    setDraft(lab.name);
+    setEditing(true);
+    setTimeout(() => { inputRef.current?.select(); }, 0);
+  }
+
+  function commitEdit() {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== lab.name) onRename(trimmed);
+    setEditing(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter")  { e.preventDefault(); commitEdit(); }
+    if (e.key === "Escape") { setEditing(false); setDraft(lab.name); }
+  }
+
+  // Shorten directory for display: show only last 2 segments
+  const shortDir = lab.directory
+    ? lab.directory.split("/").slice(-2).join("/")
+    : null;
 
   return (
-    <button
-      className={`group relative w-full rounded-md px-3 py-2 text-left transition-colors ${
+    <div
+      className={`group relative w-full rounded-md px-3 py-2 text-left transition-colors cursor-pointer ${
         isActive
           ? "bg-accent text-accent-foreground"
           : "hover:bg-accent/60 text-foreground"
       }`}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={editing ? undefined : onClick}
     >
       <div className="flex items-start gap-2">
         <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium leading-snug">{lab.name}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {formatRelativeDate(lab.updatedAt)}
+        <div className="min-w-0 flex-1 pr-6">
+          {editing ? (
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={handleKeyDown}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full rounded border border-primary bg-background px-1 py-0 text-[13px] font-medium outline-none ring-1 ring-primary"
+            />
+          ) : (
+            <p className="truncate text-[13px] font-medium leading-snug">{lab.name}</p>
+          )}
+          <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <span>{formatRelativeDate(lab.updatedAt)}</span>
             {lab.status === "in_progress" && (
-              <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-blue-500 align-middle" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
             )}
-          </p>
+            {shortDir && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center gap-0.5 cursor-default truncate max-w-[100px]">
+                    <FolderOpen className="h-2.5 w-2.5 shrink-0" />
+                    <span className="truncate">{shortDir}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-mono text-xs max-w-xs break-all">
+                  {lab.directory}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
       </div>
-      {hovered && (
-        <button
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
+
+      {/* Action buttons — shown on hover */}
+      {!editing && (
+        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 hidden items-center gap-0.5 group-hover:flex">
+          <button
+            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+            onClick={startEdit}
+            title="Переименовать"
+          >
+            <Pencil className="h-2.5 w-2.5" />
+          </button>
+          <button
+            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            onClick={onDelete}
+            title="Удалить"
+          >
+            <Trash2 className="h-2.5 w-2.5" />
+          </button>
+        </div>
       )}
-    </button>
+    </div>
+  );
+}
+
+/** Confirmation dialog for lab deletion */
+function DeleteLabDialog({
+  lab,
+  onConfirm,
+  onCancel,
+}: {
+  lab: Lab;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-[360px] rounded-xl border bg-background p-5 shadow-xl">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold">Удалить лабораторную?</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{lab.name}</span> будет удалена из списка.
+              Файлы на диске останутся.
+            </p>
+            {lab.directory && (
+              <div className="mt-2 flex items-center gap-1.5 rounded-md border bg-muted/40 px-2.5 py-1.5">
+                <FolderOpen className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span className="font-mono text-[11px] text-muted-foreground truncate" title={lab.directory}>
+                  {lab.directory}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onCancel}>
+            Отмена
+          </Button>
+          <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={onConfirm}>
+            Удалить
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -93,8 +206,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
 
-  const labs = useLabsStore((s) => s.labs);
+  const labs      = useLabsStore((s) => s.labs);
   const removeLab = useLabsStore((s) => s.removeLab);
+  const updateLab = useLabsStore((s) => s.updateLab);
+
+  const [pendingDelete, setPendingDelete] = useState<Lab | null>(null);
 
   const inProgress = labs.filter((l) => l.status === "in_progress");
   const completed  = labs.filter((l) => l.status === "completed");
@@ -167,7 +283,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 lab={lab}
                                 isActive={currentLabId === lab.id}
                                 onClick={() => navigate({ to: "/workspace/$labId", params: { labId: lab.id }, search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined } })}
-                                onDelete={(e) => { e.stopPropagation(); removeLab(lab.id); }}
+                                onDelete={(e) => { e.stopPropagation(); setPendingDelete(lab); }}
+                                onRename={(name) => updateLab(lab.id, { name })}
                               />
                             ))}
                           </div>
@@ -191,7 +308,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 lab={lab}
                                 isActive={currentLabId === lab.id}
                                 onClick={() => navigate({ to: "/workspace/$labId", params: { labId: lab.id }, search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined } })}
-                                onDelete={(e) => { e.stopPropagation(); removeLab(lab.id); }}
+                                onDelete={(e) => { e.stopPropagation(); setPendingDelete(lab); }}
+                                onRename={(name) => updateLab(lab.id, { name })}
                               />
                             ))}
                           </div>
@@ -265,6 +383,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
 
       </div>
+
+      {/* Delete confirmation dialog */}
+      {pendingDelete && (
+        <DeleteLabDialog
+          lab={pendingDelete}
+          onConfirm={() => {
+            removeLab(pendingDelete.id);
+            // If we were viewing this lab, navigate away
+            if (currentLabId === pendingDelete.id) navigate({ to: "/new" });
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </TooltipProvider>
   );
 }

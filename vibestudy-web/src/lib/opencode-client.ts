@@ -39,8 +39,38 @@ export interface SDKSession {
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-function getClient(): OpencodeClient | null {
-  return useConnectionStore.getState().connection.client;
+/** Returns the base URL for direct fetch calls (no SDK class involved) */
+function getBaseUrl(): string {
+  return useConnectionStore.getState().connection.baseUrl.replace(/\/$/, "");
+}
+
+/** Direct fetch wrapper — throws on non-ok responses */
+async function apiFetch<T>(
+  path: string,
+  options?: RequestInit & { query?: Record<string, string | undefined> }
+): Promise<T> {
+  const base = getBaseUrl();
+  let url = `${base}${path}`;
+  if (options?.query) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(options.query)) {
+      if (v !== undefined) params.set(k, v);
+    }
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+  }
+  const { query: _q, ...fetchOpts } = options ?? {};
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(fetchOpts.headers ?? {}) },
+    ...fetchOpts,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+  }
+  // 204 No Content
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
 }
 
 // ── query keys ────────────────────────────────────────────────────────────
@@ -56,35 +86,24 @@ export const qk = {
 // ── sessions ───────────────────────────────────────────────────────────────
 
 export function useSessions() {
-  const client = useConnectionStore((s) => s.connection.client);
+  const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: qk.sessions(),
-    enabled: !!client,
-    queryFn: async () => {
-      const res = await client!.session.list();
-      return (res.data ?? []) as SDKSession[];
-    },
+    enabled: connected,
+    queryFn: () => apiFetch<SDKSession[]>("/session"),
   });
 }
 
 export function useCreateSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      title,
-      directory,
-    }: {
-      title?: string;
-      directory: string;
-    }) => {
-      const client = getClient();
-      if (!client) throw new Error("OpenCode not connected");
-      const res = await client.session.create({
-        body: { title },
+    mutationFn: async ({ title, directory }: { title?: string; directory: string }) => {
+      const session = await apiFetch<SDKSession>("/session", {
+        method: "POST",
         query: { directory },
+        body: JSON.stringify({ title }),
       });
-      if (!res.data) throw new Error("Failed to create session");
-      return res.data as SDKSession;
+      return session;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.sessions() }),
   });
@@ -93,16 +112,11 @@ export function useCreateSession() {
 // ── messages ───────────────────────────────────────────────────────────────
 
 export function useMessages(sessionId: string) {
-  const client = useConnectionStore((s) => s.connection.client);
+  const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: qk.messages(sessionId),
-    enabled: !!client && !!sessionId,
-    queryFn: async () => {
-      const res = await client!.session.messages({
-        path: { id: sessionId },
-      });
-      return (res.data ?? []) as unknown as SDKMessage[];
-    },
+    enabled: connected && !!sessionId,
+    queryFn: () => apiFetch<SDKMessage[]>(`/session/${sessionId}/message`),
   });
 }
 
@@ -121,19 +135,13 @@ export function useSendMessage() {
       fileMime?: string;
       system?: string;
     }) => {
-      const client = getClient();
-      if (!client) throw new Error("OpenCode not connected");
-
       type PartInput = { type: "text"; text: string } | { type: "file"; url: string; mime: string };
       const parts: PartInput[] = [{ type: "text", text }];
-      if (fileUrl && fileMime) {
-        parts.push({ type: "file", url: fileUrl, mime: fileMime });
-      }
-
-      // promptAsync returns 204 void — fire and forget
-      await client.session.promptAsync({
-        path: { id: sessionId },
-        body: { parts, system },
+      if (fileUrl && fileMime) parts.push({ type: "file", url: fileUrl, mime: fileMime });
+      // promptAsync returns 204 — fire and forget
+      await apiFetch<void>(`/session/${sessionId}/prompt_async`, {
+        method: "POST",
+        body: JSON.stringify({ parts, system }),
       });
     },
   });
@@ -141,42 +149,39 @@ export function useSendMessage() {
 
 export function useAbortSession() {
   return useMutation({
-    mutationFn: async (sessionId: string) => {
-      const client = getClient();
-      if (!client) throw new Error("OpenCode not connected");
-      await client.session.abort({ path: { id: sessionId } });
-    },
+    mutationFn: (sessionId: string) =>
+      apiFetch<void>(`/session/${sessionId}/abort`, { method: "POST", body: JSON.stringify({}) }),
   });
 }
 
 // ── files ──────────────────────────────────────────────────────────────────
 
 export function useFileList(directory: string, path: string = ".") {
-  const client = useConnectionStore((s) => s.connection.client);
+  const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: qk.files(directory, path),
-    enabled: !!client && !!directory,
-    queryFn: async () => {
-      const res = await client!.file.list({ query: { directory, path } });
-      return (res.data ?? []) as Array<{
-        name: string;
-        path: string;
-        absolute: string;
-        type: "file" | "directory";
-        ignored: boolean;
-      }>;
-    },
+    enabled: connected && !!directory,
+    staleTime: 5_000,
+    queryFn: () =>
+      apiFetch<Array<{ name: string; path: string; absolute: string; type: "file" | "directory"; ignored: boolean }>>(
+        "/file",
+        { query: { directory, path } }
+      ),
   });
 }
 
 export function useFileContent(directory: string, path: string) {
-  const client = useConnectionStore((s) => s.connection.client);
+  const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: qk.fileContent(directory, path),
-    enabled: !!client && !!directory && !!path,
+    enabled: connected && !!directory && !!path,
+    staleTime: 10_000,
     queryFn: async () => {
-      const res = await client!.file.read({ query: { directory, path } });
-      return res.data as string | undefined;
+      const res = await apiFetch<{ type: string; content: string }>(
+        "/file/content",
+        { query: { directory, path } }
+      );
+      return res?.content ?? "";
     },
   });
 }
@@ -184,46 +189,47 @@ export function useFileContent(directory: string, path: string) {
 // ── SSE events ─────────────────────────────────────────────────────────────
 
 /**
- * Subscribe to OpenCode SSE event stream.
- * Returns an async cleanup function.
- *
- * The SDK's `event.subscribe()` returns `Promise<{ stream: AsyncGenerator<Event> }>`.
- * We iterate the stream in a background task and call `onEvent` per event.
- * To stop, call the returned cleanup.
+ * Subscribe to OpenCode SSE event stream via native EventSource.
+ * No dependency on SDK class methods.
+ * Returns a cleanup function.
  */
-export async function subscribeEvents(
-  client: OpencodeClient,
+export function subscribeEvents(
+  _clientOrBaseUrl: OpencodeClient | string | null,
   onEvent: (event: Record<string, unknown>) => void,
   onError?: (err: unknown) => void
-): Promise<() => void> {
-  let cancelled = false;
+): () => void {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/event`;
+
+  let es: EventSource | null = null;
+  let closed = false;
 
   try {
-    const result = await client.event.subscribe();
-    // result: { stream: AsyncGenerator }
-    const stream = (result as unknown as { stream: AsyncGenerator<Record<string, unknown>> }).stream;
-    if (!stream) return () => {};
+    es = new EventSource(url);
 
-    (async () => {
+    es.onmessage = (e) => {
+      if (closed) return;
       try {
-        for await (const event of stream) {
-          if (cancelled) break;
-          onEvent(event);
-        }
-      } catch (err) {
-        if (!cancelled) onError?.(err);
+        const data = JSON.parse(e.data) as Record<string, unknown>;
+        onEvent(data);
+      } catch {
+        // ignore parse errors
       }
-    })();
+    };
 
-    return () => {
-      cancelled = true;
-      // best-effort: try to return the generator
-      stream.return?.(undefined);
+    es.onerror = (e) => {
+      if (closed) return;
+      onError?.(e);
     };
   } catch (err) {
     onError?.(err);
     return () => {};
   }
+
+  return () => {
+    closed = true;
+    es?.close();
+  };
 }
 
 // ── providers & agents ─────────────────────────────────────────────────────
@@ -243,27 +249,23 @@ export interface SDKAgent {
 }
 
 export function useProviders() {
-  const client = useConnectionStore((s) => s.connection.client);
+  const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: ["providers"] as const,
-    enabled: !!client,
+    enabled: connected,
     queryFn: async () => {
-      const res = await client!.provider.list();
-      const data = res.data as { all: SDKProvider[]; connected: string[]; default: Record<string, string> } | undefined;
+      const data = await apiFetch<{ all: SDKProvider[]; connected: string[]; default: Record<string, string> }>("/provider");
       return data ?? { all: [] as SDKProvider[], connected: [] as string[], default: {} as Record<string, string> };
     },
   });
 }
 
 export function useAgents(directory?: string) {
-  const client = useConnectionStore((s) => s.connection.client);
+  const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: ["agents", directory] as const,
-    enabled: !!client,
-    queryFn: async () => {
-      const res = await client!.app.agents({ query: { directory } });
-      return (res.data ?? []) as SDKAgent[];
-    },
+    enabled: connected,
+    queryFn: () => apiFetch<SDKAgent[]>("/agent", { query: directory ? { directory } : undefined }),
   });
 }
 
@@ -272,18 +274,10 @@ export function useAgents(directory?: string) {
 export function useRevertSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      sessionId,
-      messageId,
-    }: {
-      sessionId: string;
-      messageId: string;
-    }) => {
-      const client = getClient();
-      if (!client) throw new Error("OpenCode not connected");
-      await client.session.revert({
-        path: { id: sessionId },
-        body: { messageID: messageId },
+    mutationFn: async ({ sessionId, messageId }: { sessionId: string; messageId: string }) => {
+      await apiFetch<void>(`/session/${sessionId}/revert`, {
+        method: "POST",
+        body: JSON.stringify({ messageID: messageId }),
       });
     },
     onSuccess: (_d, vars) => {
@@ -297,9 +291,7 @@ export function useUnrevertSession() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      const client = getClient();
-      if (!client) throw new Error("OpenCode not connected");
-      await client.session.unrevert({ path: { id: sessionId } });
+      await apiFetch<void>(`/session/${sessionId}/unrevert`, { method: "POST", body: JSON.stringify({}) });
     },
     onSuccess: (_d, sessionId) => {
       qc.invalidateQueries({ queryKey: qk.messages(sessionId) });

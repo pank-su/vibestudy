@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -9,10 +9,13 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useWorkspaceStore } from "@/stores/workspace";
-import { useFileList } from "@/lib/opencode-client";
+import { useFileList, subscribeEvents, qk } from "@/lib/opencode-client";
 import { useConnectionStore } from "@/stores/connection";
+import { useQueryClient } from "@tanstack/react-query";
+
 interface FileTreeProps {
   directory?: string;
+  sessionId?: string;
 }
 
 interface SDKFileNode {
@@ -23,19 +26,19 @@ interface SDKFileNode {
   ignored: boolean;
 }
 
-// ── Mock fallback when not connected ────────────────────────────────────────
+// ── Mock fallback ──────────────────────────────────────────────────────────
 const MOCK_FILES: SDKFileNode[] = [
-  { name: "src",           path: "src",                absolute: "", type: "directory", ignored: false },
-  { name: "main.cpp",      path: "src/main.cpp",       absolute: "", type: "file",      ignored: false },
-  { name: "utils.hpp",     path: "src/utils.hpp",      absolute: "", type: "file",      ignored: false },
-  { name: "docs",          path: "docs",               absolute: "", type: "directory", ignored: false },
-  { name: "index.typ",     path: "docs/index.typ",     absolute: "", type: "file",      ignored: false },
-  { name: "TASK.md",       path: "TASK.md",            absolute: "", type: "file",      ignored: false },
-  { name: "Makefile",      path: "Makefile",           absolute: "", type: "file",      ignored: false },
-  { name: "opencode.json", path: "opencode.json",      absolute: "", type: "file",      ignored: false },
+  { name: "src",           path: "src",            absolute: "", type: "directory", ignored: false },
+  { name: "main.cpp",      path: "src/main.cpp",   absolute: "", type: "file",      ignored: false },
+  { name: "utils.hpp",     path: "src/utils.hpp",  absolute: "", type: "file",      ignored: false },
+  { name: "docs",          path: "docs",           absolute: "", type: "directory", ignored: false },
+  { name: "index.typ",     path: "docs/index.typ", absolute: "", type: "file",      ignored: false },
+  { name: "TASK.md",       path: "TASK.md",        absolute: "", type: "file",      ignored: false },
+  { name: "Makefile",      path: "Makefile",       absolute: "", type: "file",      ignored: false },
+  { name: "opencode.json", path: "opencode.json",  absolute: "", type: "file",      ignored: false },
 ];
 
-// ── Build tree from flat list ──────────────────────────────────────────────
+// ── Tree builder ───────────────────────────────────────────────────────────
 interface TreeNode {
   name: string;
   path: string;
@@ -47,53 +50,38 @@ function buildTree(nodes: SDKFileNode[]): TreeNode[] {
   const root: TreeNode[] = [];
   const map = new Map<string, TreeNode>();
 
-  // Sort: directories first, then alphabetically
   const sorted = [...nodes].sort((a, b) => {
     if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
     return a.path.localeCompare(b.path);
   });
 
   for (const node of sorted) {
-    const parts = node.path.split("/");
-    const treeNode: TreeNode = {
-      name: node.name,
-      path: node.path,
-      type: node.type,
-      children: [],
-    };
+    const treeNode: TreeNode = { name: node.name, path: node.path, type: node.type, children: [] };
     map.set(node.path, treeNode);
 
+    const parts = node.path.split("/");
     if (parts.length === 1) {
       root.push(treeNode);
     } else {
       const parentPath = parts.slice(0, -1).join("/");
       const parent = map.get(parentPath);
-      if (parent) {
-        parent.children.push(treeNode);
-      } else {
-        // Orphan — add to root
-        root.push(treeNode);
-      }
+      if (parent) parent.children.push(treeNode);
+      else root.push(treeNode);
     }
   }
-
   return root;
 }
 
-// ── Components ─────────────────────────────────────────────────────────────
-
+// ── TreeNodeItem ───────────────────────────────────────────────────────────
 function TreeNodeItem({
-  node,
-  depth,
-  activeFile,
-  onSelect,
+  node, depth, activeFile, onSelect,
 }: {
   node: TreeNode;
   depth: number;
   activeFile: string | null;
   onSelect: (path: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(depth < 2); // auto-expand first 2 levels
   const isDir    = node.type === "directory";
   const isActive = activeFile === node.path;
 
@@ -112,8 +100,8 @@ function TreeNodeItem({
               ? <ChevronDown  className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
             {open
-              ? <FolderOpen className="h-4 w-4 shrink-0 text-primary/80" />
-              : <Folder     className="h-4 w-4 shrink-0 text-primary/80" />}
+              ? <FolderOpen className="h-4 w-4 shrink-0 text-primary/70" />
+              : <Folder     className="h-4 w-4 shrink-0 text-primary/70" />}
           </>
         ) : (
           <>
@@ -126,24 +114,40 @@ function TreeNodeItem({
 
       {isDir && open && node.children.map((child) => (
         <TreeNodeItem
-          key={child.path}
-          node={child}
-          depth={depth + 1}
-          activeFile={activeFile}
-          onSelect={onSelect}
+          key={child.path} node={child} depth={depth + 1}
+          activeFile={activeFile} onSelect={onSelect}
         />
       ))}
     </div>
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
-
-export function FileTree({ directory }: FileTreeProps) {
-  const connected   = useConnectionStore((s) => s.connection.connected);
+// ── FileTree ───────────────────────────────────────────────────────────────
+export function FileTree({ directory, sessionId }: FileTreeProps) {
+  const connected = useConnectionStore((s) => s.connection.connected);
   const { activeFile, setActiveFile } = useWorkspaceStore();
+  const qc = useQueryClient();
 
   const { data: flatFiles, isLoading } = useFileList(directory ?? "", ".");
+
+  // Subscribe to file.edited SSE events → invalidate file list
+  useEffect(() => {
+    if (!directory) return;
+    const cleanup = subscribeEvents(
+      null,
+      (ev) => {
+        const event = ev as Record<string, unknown>;
+        if (event.type === "file.edited") {
+          qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
+          if (activeFile) {
+            qc.invalidateQueries({ queryKey: qk.fileContent(directory, activeFile) });
+          }
+        }
+      }
+    );
+    return cleanup;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directory, sessionId]);
 
   const files = connected && flatFiles
     ? buildTree(flatFiles.filter((f) => !f.ignored))
@@ -161,13 +165,15 @@ export function FileTree({ directory }: FileTreeProps) {
       </div>
       <ScrollArea className="flex-1">
         <div className="p-1">
+          {!connected && (
+            <p className="px-2 py-1 text-[11px] text-muted-foreground/60">
+              Нет подключения — mock данные
+            </p>
+          )}
           {files.map((node) => (
             <TreeNodeItem
-              key={node.path}
-              node={node}
-              depth={0}
-              activeFile={activeFile}
-              onSelect={setActiveFile}
+              key={node.path} node={node} depth={0}
+              activeFile={activeFile} onSelect={setActiveFile}
             />
           ))}
         </div>

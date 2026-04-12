@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useConnectionStore } from "@/stores/connection";
 import { useSendMessage, useAbortSession, subscribeEvents, useQueryClient, qk } from "@/lib/opencode-client";
 
 // ── types ──────────────────────────────────────────────────────────────────
@@ -161,7 +160,6 @@ export function ChatPanel({
   const bottomRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  const client = useConnectionStore((s) => s.connection.client);
   const sendMessage = useSendMessage();
   const abortSession = useAbortSession();
   const qc = useQueryClient();
@@ -225,14 +223,11 @@ export function ChatPanel({
   // ── SSE subscription ─────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!client || !sessionId) return;
+    if (!sessionId) return;
 
-    let cancelled = false;
-
-    subscribeEvents(
-      client,
+    const cleanup = subscribeEvents(
+      null,
       (ev) => {
-        if (cancelled) return;
         const event = ev as Record<string, unknown>;
         const type = event.type as string;
         const props = event.properties as Record<string, unknown> | undefined;
@@ -252,8 +247,6 @@ export function ChatPanel({
           if (partType === "text") {
             const text = delta ?? (part.text as string) ?? "";
             if (text) upsertTextBubble(messageId, text);
-          } else if (partType === "agent") {
-            // agent switch — no visual bubble, but remember agent for next text parts
           } else if (partType === "tool") {
             const state = part.state as Record<string, unknown>;
             const status = (state?.status as ToolBubble["status"]) ?? "pending";
@@ -268,7 +261,6 @@ export function ChatPanel({
             setIsBusy(true);
           } else if (status?.type === "idle") {
             setIsBusy(false);
-            // refresh messages + file tree
             qc.invalidateQueries({ queryKey: qk.messages(sessionId) });
             if (directory) qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
           }
@@ -278,20 +270,15 @@ export function ChatPanel({
           if (directory) qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
         }
       },
-      (err) => {
-        console.warn("SSE error:", err);
-      }
-    ).then((cleanup) => {
-      if (cancelled) cleanup();
-      else cleanupRef.current = cleanup;
-    });
+      (err) => console.warn("SSE error:", err)
+    );
 
+    cleanupRef.current = cleanup;
     return () => {
-      cancelled = true;
-      cleanupRef.current?.();
+      cleanup();
       cleanupRef.current = null;
     };
-  }, [client, sessionId, directory, upsertTextBubble, upsertToolBubble, qc]);
+  }, [sessionId, directory, upsertTextBubble, upsertToolBubble, qc]);
 
   // ── send initial prompt ──────────────────────────────────────────────────
 

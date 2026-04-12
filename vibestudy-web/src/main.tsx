@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { createAppRouter } from "@/lib/router";
+import { useConnectionStore } from "@/stores/connection";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -16,6 +17,9 @@ const queryClient = new QueryClient({
 });
 
 const router = createAppRouter(queryClient);
+
+// Auto-reconnect on startup using persisted baseUrl
+useConnectionStore.getState().tryAutoConnect();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

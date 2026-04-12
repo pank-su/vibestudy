@@ -1,14 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import MonacoEditor, { useMonaco } from "@monaco-editor/react";
-import { Loader2, Save, Check } from "lucide-react";
+import { Loader2, Save, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFileContent } from "@/lib/opencode-client";
+import { useFileContent, qk } from "@/lib/opencode-client";
 import { useConnectionStore } from "@/stores/connection";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/use-theme";
 
 // ── language detection ─────────────────────────────────────────────────────
 
 function detectLanguage(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith("makefile") || lower.endsWith("gnumakefile")) return "makefile";
+  if (lower.endsWith("dockerfile"))   return "dockerfile";
+  if (lower.endsWith("cmakelists.txt")) return "cmake";
+
   const ext = path.split(".").pop()?.toLowerCase() ?? "";
   const map: Record<string, string> = {
     ts: "typescript", tsx: "typescript",
@@ -28,17 +34,13 @@ function detectLanguage(path: string): string {
     yaml: "yaml", yml: "yaml",
     toml: "ini",
     md: "markdown",
-    typ: "markdown",   // Typst — no dedicated lang, markdown is closest
+    typ: "markdown",   // Typst — no dedicated lang
     html: "html",
     css: "css",
     scss: "scss",
     sql: "sql",
     xml: "xml",
-    makefile: "makefile",
-    dockerfile: "dockerfile",
   };
-  if (ext === "makefile" || path.toLowerCase().endsWith("makefile")) return "makefile";
-  if (path.toLowerCase().endsWith("dockerfile")) return "dockerfile";
   return map[ext] ?? "plaintext";
 }
 
@@ -54,24 +56,26 @@ interface CodeEditorProps {
 export function CodeEditor({ filePath, directory }: CodeEditorProps) {
   const { theme } = useTheme();
   const monaco = useMonaco();
-  const client = useConnectionStore((s) => s.connection.client);
+  const baseUrl = useConnectionStore((s) => s.connection.baseUrl);
+  const qc = useQueryClient();
 
   const { data: remoteContent, isLoading } = useFileContent(directory, filePath);
 
-  const [localContent, setLocalContent] = useState<string | undefined>(undefined);
-  const [savedContent, setSavedContent] = useState<string | undefined>(undefined);
-  const [isSaving, setIsSaving] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
+  const [localContent, setLocalContent] = useState<string>("");
+  const [savedContent, setSavedContent] = useState<string>("");
+  const [isSaving,     setIsSaving]     = useState(false);
+  const [justSaved,    setJustSaved]    = useState(false);
+  const [saveError,    setSaveError]    = useState<string | null>(null);
 
-  // When remote content loads or filePath changes, reset local state
+  // Reset when file changes or remote content loads
   useEffect(() => {
-    if (remoteContent !== undefined) {
-      setLocalContent(remoteContent);
-      setSavedContent(remoteContent);
-    }
+    const text = remoteContent ?? "";
+    setLocalContent(text);
+    setSavedContent(text);
+    setSaveError(null);
   }, [remoteContent, filePath]);
 
-  const isDirty = localContent !== undefined && localContent !== savedContent;
+  const isDirty = localContent !== savedContent;
 
   // Monaco theme sync
   useEffect(() => {
@@ -79,30 +83,39 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
     monaco.editor.setTheme(theme === "dark" ? "vs-dark" : "vs");
   }, [monaco, theme]);
 
-  // Save via OpenCode file write endpoint
   const handleSave = useCallback(async () => {
-    if (!client || !isDirty || localContent === undefined) return;
+    if (!isDirty || isSaving) return;
     setIsSaving(true);
+    setSaveError(null);
+
     try {
-      // SDK doesn't expose a file.write — use fetch directly to the server
-      const connection = useConnectionStore.getState().connection;
-      const url = `${connection.baseUrl}/file`;
-      await fetch(url, {
-        method: "POST",
+      // OpenCode REST API: PUT /file/content with JSON body
+      // (not in SDK types but available in the server)
+      const res = await fetch(`${baseUrl}/file/content`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ directory, path: filePath, content: localContent }),
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       setSavedContent(localContent);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
+      // Invalidate cached content
+      qc.invalidateQueries({ queryKey: qk.fileContent(directory, filePath) });
     } catch (e) {
-      console.error("Failed to save file:", e);
+      console.error("Save failed:", e);
+      setSaveError("Не удалось сохранить");
+      setTimeout(() => setSaveError(null), 3000);
     } finally {
       setIsSaving(false);
     }
-  }, [client, isDirty, localContent, directory, filePath]);
+  }, [isDirty, isSaving, baseUrl, directory, filePath, localContent, qc]);
 
-  // Ctrl+S / Cmd+S
+  // Ctrl/Cmd+S
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -127,20 +140,25 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* File tab bar */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-b bg-muted/20 px-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-muted-foreground">{fileName}</span>
-          {isDirty && (
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Несохранённые изменения" />
+      {/* File info bar */}
+      <div className="flex h-8 shrink-0 items-center justify-between border-b bg-muted/20 px-3 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs font-mono text-muted-foreground truncate">{fileName}</span>
+          {isDirty && !saveError && (
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" title="Несохранённые изменения" />
+          )}
+          {saveError && (
+            <span className="flex items-center gap-1 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3" />{saveError}
+            </span>
           )}
         </div>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1.5 px-2 text-xs"
+          variant="ghost" size="sm"
+          className="h-6 gap-1.5 px-2 text-xs shrink-0"
           onClick={handleSave}
           disabled={!isDirty || isSaving}
+          title="Сохранить (Ctrl+S)"
         >
           {justSaved ? (
             <><Check className="h-3 w-3 text-green-500" />Сохранено</>
@@ -157,12 +175,12 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
         <MonacoEditor
           height="100%"
           language={language}
-          value={localContent ?? ""}
+          value={localContent}
           theme={theme === "dark" ? "vs-dark" : "vs"}
           onChange={(val) => setLocalContent(val ?? "")}
           options={{
             fontSize: 13,
-            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
             lineHeight: 20,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
@@ -175,10 +193,7 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
-            scrollbar: {
-              verticalScrollbarSize: 6,
-              horizontalScrollbarSize: 6,
-            },
+            scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
             padding: { top: 8, bottom: 8 },
           }}
         />
