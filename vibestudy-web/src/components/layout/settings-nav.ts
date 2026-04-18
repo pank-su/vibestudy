@@ -13,6 +13,7 @@ export const SETTINGS_TAB_ITEMS: {
 ];
 
 export function parseSettingsTab(value: unknown): SettingsTabId {
-  if (value === "local" || value === "cloud" || value === "profile") return value;
+  if (value === "local" || value === "cloud" || value === "profile")
+    return value;
   return "profile";
 }

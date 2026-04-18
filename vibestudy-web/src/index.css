@@ -112,8 +112,8 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: 'Lora Variable', serif;
-  --font-mono: 'Geist Mono Variable', monospace;
+  --font-heading: "Lora Variable", serif;
+  --font-mono: "Geist Mono Variable", monospace;
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -150,78 +150,90 @@
 }
 
 /* Vertical handle (between left/right panels) */
-.resizable-handle[aria-orientation=vertical] {
+.resizable-handle[aria-orientation="vertical"] {
   width: 5px;
   cursor: col-resize;
 }
-.resizable-handle[aria-orientation=vertical]::before {
+.resizable-handle[aria-orientation="vertical"]::before {
   content: "";
   position: absolute;
   inset: 0 2px;
   border-radius: 9999px;
   background: var(--border);
-  transition: background 0.15s, inset 0.15s;
+  transition:
+    background 0.15s,
+    inset 0.15s;
 }
-.resizable-handle[aria-orientation=vertical]:hover::before,
-.resizable-handle[aria-orientation=vertical][data-separator=drag]::before {
+.resizable-handle[aria-orientation="vertical"]:hover::before,
+.resizable-handle[aria-orientation="vertical"][data-separator="drag"]::before {
   inset: 0 1.5px;
   background: color-mix(in oklch, var(--primary) 40%, transparent);
 }
 
 /* Horizontal handle (between top/bottom panels) */
-.resizable-handle[aria-orientation=horizontal] {
+.resizable-handle[aria-orientation="horizontal"] {
   height: 5px;
   width: 100%;
   cursor: row-resize;
 }
-.resizable-handle[aria-orientation=horizontal]::before {
+.resizable-handle[aria-orientation="horizontal"]::before {
   content: "";
   position: absolute;
   inset: 2px 0;
   border-radius: 9999px;
   background: var(--border);
-  transition: background 0.15s, inset 0.15s;
+  transition:
+    background 0.15s,
+    inset 0.15s;
 }
-.resizable-handle[aria-orientation=horizontal]:hover::before,
-.resizable-handle[aria-orientation=horizontal][data-separator=drag]::before {
+.resizable-handle[aria-orientation="horizontal"]:hover::before,
+.resizable-handle[aria-orientation="horizontal"][data-separator="drag"]::before {
   inset: 1.5px 0;
   background: color-mix(in oklch, var(--primary) 40%, transparent);
 }
 
 /* Pill — vertical */
-.resizable-handle[aria-orientation=vertical] .resizable-pill {
+.resizable-handle[aria-orientation="vertical"] .resizable-pill {
   position: relative;
   z-index: 1;
   width: 3px;
   height: 20px;
   border-radius: 9999px;
   background: transparent;
-  transition: background 0.15s, height 0.15s;
+  transition:
+    background 0.15s,
+    height 0.15s;
 }
-.resizable-handle[aria-orientation=vertical]:hover .resizable-pill,
-.resizable-handle[aria-orientation=vertical][data-separator=drag] .resizable-pill {
+.resizable-handle[aria-orientation="vertical"]:hover .resizable-pill,
+.resizable-handle[aria-orientation="vertical"][data-separator="drag"]
+  .resizable-pill {
   background: var(--border);
   height: 32px;
 }
-.resizable-handle[aria-orientation=vertical][data-separator=drag] .resizable-pill {
+.resizable-handle[aria-orientation="vertical"][data-separator="drag"]
+  .resizable-pill {
   background: color-mix(in oklch, var(--primary) 60%, transparent);
 }
 
 /* Pill — horizontal */
-.resizable-handle[aria-orientation=horizontal] .resizable-pill {
+.resizable-handle[aria-orientation="horizontal"] .resizable-pill {
   position: relative;
   z-index: 1;
   height: 3px;
   width: 20px;
   border-radius: 9999px;
   background: transparent;
-  transition: background 0.15s, width 0.15s;
+  transition:
+    background 0.15s,
+    width 0.15s;
 }
-.resizable-handle[aria-orientation=horizontal]:hover .resizable-pill,
-.resizable-handle[aria-orientation=horizontal][data-separator=drag] .resizable-pill {
+.resizable-handle[aria-orientation="horizontal"]:hover .resizable-pill,
+.resizable-handle[aria-orientation="horizontal"][data-separator="drag"]
+  .resizable-pill {
   background: var(--border);
   width: 32px;
 }
-.resizable-handle[aria-orientation=horizontal][data-separator=drag] .resizable-pill {
+.resizable-handle[aria-orientation="horizontal"][data-separator="drag"]
+  .resizable-pill {
   background: color-mix(in oklch, var(--primary) 60%, transparent);
 }

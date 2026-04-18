@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { SETTINGS_TAB_ITEMS, parseSettingsTab, type SettingsTabId } from "@/components/layout/settings-nav";
+import {
+  SETTINGS_TAB_ITEMS,
+  parseSettingsTab,
+  type SettingsTabId,
+} from "@/components/layout/settings-nav";
 import { cn } from "@/lib/utils";
 import {
   Add01Icon,
@@ -118,7 +122,9 @@ function LabRow({
     }
   }
 
-  const shortDir = lab.directory ? lab.directory.split("/").slice(-2).join("/") : null;
+  const shortDir = lab.directory
+    ? lab.directory.split("/").slice(-2).join("/")
+    : null;
 
   if (editing) {
     return (
@@ -143,7 +149,8 @@ function LabRow({
       tabIndex={0}
       className="cursor-pointer border-transparent"
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest("[data-slot=item-actions]")) return;
+        if ((e.target as HTMLElement).closest("[data-slot=item-actions]"))
+          return;
         onOpen();
       }}
       onKeyDown={(e) => {
@@ -154,7 +161,9 @@ function LabRow({
       }}
     >
       <ItemContent className="min-w-0">
-        <ItemTitle className="w-full max-w-full text-[13px] text-sidebar-foreground">{lab.name}</ItemTitle>
+        <ItemTitle className="w-full max-w-full text-[13px] text-sidebar-foreground">
+          {lab.name}
+        </ItemTitle>
         <ItemDescription className="!line-clamp-none flex flex-wrap items-center gap-1 text-[11px] text-sidebar-foreground/60">
           <span>{formatRelativeDate(lab.updatedAt)}</span>
           {shortDir && (
@@ -165,7 +174,10 @@ function LabRow({
                   <span className="truncate">{shortDir}</span>
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-xs break-all font-mono text-xs">
+              <TooltipContent
+                side="right"
+                className="max-w-xs break-all font-mono text-xs"
+              >
                 {lab.directory}
               </TooltipContent>
             </Tooltip>
@@ -216,10 +228,18 @@ function SettingsSidebarHeader() {
   return (
     <SidebarHeader className="border-b">
       <div className="flex items-center gap-2 px-1 py-0.5">
-        <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={goBack}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 shrink-0"
+          onClick={goBack}
+        >
           <Hi icon={ArrowLeft01Icon} size={16} />
         </Button>
-        <span className="min-w-0 truncate text-sm font-semibold">Настройки</span>
+        <span className="min-w-0 truncate text-sm font-semibold">
+          Настройки
+        </span>
       </div>
     </SidebarHeader>
   );
@@ -247,7 +267,11 @@ function SettingsSidebarTabs({ activeTab }: { activeTab: SettingsTabId }) {
                   : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
               )}
             >
-              <Hi icon={icon} size={16} className="shrink-0 text-sidebar-foreground/70" />
+              <Hi
+                icon={icon}
+                size={16}
+                className="shrink-0 text-sidebar-foreground/70"
+              />
               {label}
             </Link>
           ))}
@@ -265,7 +289,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const settingsTab: SettingsTabId | null = isSettings
     ? parseSettingsTab((location.search as { tab?: unknown }).tab)
     : null;
-  const currentLabId = path.startsWith("/workspace/") ? path.split("/workspace/")[1] : null;
+  const currentLabId = path.startsWith("/workspace/")
+    ? path.split("/workspace/")[1]
+    : null;
 
   const { connected } = useConnectionStore((s) => s.connection);
   const { theme, toggleTheme } = useTheme();
@@ -315,11 +341,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <SidebarHeader className="border-b">
                   <div className="flex items-center gap-2 px-1">
-                    <Link to="/new" className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1 py-0.5">
+                    <Link
+                      to="/new"
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1 py-0.5"
+                    >
                       <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
                         V
                       </div>
-                      <span className="truncate text-sm font-semibold">VibeStudy</span>
+                      <span className="truncate text-sm font-semibold">
+                        VibeStudy
+                      </span>
                     </Link>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -341,7 +372,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   {labs.length === 0 ? (
                     <SidebarGroup>
                       <SidebarGroupContent className="px-2 py-4 text-center">
-                        <p className="text-[13px] text-sidebar-foreground/70">Нет лабораторных</p>
+                        <p className="text-[13px] text-sidebar-foreground/70">
+                          Нет лабораторных
+                        </p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -367,7 +400,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                   isActive={currentLabId === lab.id}
                                   onOpen={() => openLab(lab)}
                                   onDelete={() => setPendingDelete(lab)}
-                                  onRename={(name) => updateLab(lab.id, { name })}
+                                  onRename={(name) =>
+                                    updateLab(lab.id, { name })
+                                  }
                                 />
                               ))}
                             </ItemGroup>
@@ -376,7 +411,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       )}
                       {completed.length > 0 && (
                         <SidebarGroup>
-                          {inProgress.length > 0 && <SidebarSeparator className="my-1" />}
+                          {inProgress.length > 0 && (
+                            <SidebarSeparator className="my-1" />
+                          )}
                           <SidebarGroupLabel>Выполненные</SidebarGroupLabel>
                           <SidebarGroupContent className="px-1.5">
                             <ItemGroup className="gap-1" role="list">
@@ -387,7 +424,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                   isActive={currentLabId === lab.id}
                                   onOpen={() => openLab(lab)}
                                   onDelete={() => setPendingDelete(lab)}
-                                  onRename={(name) => updateLab(lab.id, { name })}
+                                  onRename={(name) =>
+                                    updateLab(lab.id, { name })
+                                  }
                                 />
                               ))}
                             </ItemGroup>
@@ -403,7 +442,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-0.5">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8" onClick={toggleTheme}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            onClick={toggleTheme}
+                          >
                             {theme === "dark" ? (
                               <Hi icon={Sun01Icon} size={14} />
                             ) : (
@@ -411,13 +455,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                             )}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{theme === "dark" ? "Светлая" : "Тёмная"} тема</TooltipContent>
+                        <TooltipContent side="top">
+                          {theme === "dark" ? "Светлая" : "Тёмная"} тема
+                        </TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to="/settings" search={{ tab: "profile" }}>
-                            <Button variant="ghost" size="icon" className="size-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                            >
                               <Hi icon={Settings01Icon} size={14} />
                             </Button>
                           </Link>
@@ -430,14 +480,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       <TooltipTrigger asChild>
                         <div className="flex size-8 items-center justify-center">
                           {connected ? (
-                            <Hi icon={Wifi01Icon} size={14} className="text-primary" />
+                            <Hi
+                              icon={Wifi01Icon}
+                              size={14}
+                              className="text-primary"
+                            />
                           ) : (
-                            <Hi icon={WifiDisconnected01Icon} size={14} className="text-sidebar-foreground/40" />
+                            <Hi
+                              icon={WifiDisconnected01Icon}
+                              size={14}
+                              className="text-sidebar-foreground/40"
+                            />
                           )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top">
-                        {connected ? "OpenCode подключён" : "OpenCode не подключён"}
+                        {connected
+                          ? "OpenCode подключён"
+                          : "OpenCode не подключён"}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -459,7 +519,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <div className="flex items-center justify-between gap-1 px-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-8" onClick={toggleTheme}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={toggleTheme}
+                        >
                           {theme === "dark" ? (
                             <Hi icon={Sun01Icon} size={14} />
                           ) : (
@@ -467,20 +532,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           )}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent side="top">{theme === "dark" ? "Светлая" : "Тёмная"} тема</TooltipContent>
+                      <TooltipContent side="top">
+                        {theme === "dark" ? "Светлая" : "Тёмная"} тема
+                      </TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="flex size-8 items-center justify-center">
                           {connected ? (
-                            <Hi icon={Wifi01Icon} size={14} className="text-primary" />
+                            <Hi
+                              icon={Wifi01Icon}
+                              size={14}
+                              className="text-primary"
+                            />
                           ) : (
-                            <Hi icon={WifiDisconnected01Icon} size={14} className="text-sidebar-foreground/40" />
+                            <Hi
+                              icon={WifiDisconnected01Icon}
+                              size={14}
+                              className="text-sidebar-foreground/40"
+                            />
                           )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top">
-                        {connected ? "OpenCode подключён" : "OpenCode не подключён"}
+                        {connected
+                          ? "OpenCode подключён"
+                          : "OpenCode не подключён"}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -502,19 +579,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarInset>
       </SidebarProvider>
 
-      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить лабораторную?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="text-left">
                 <p>
-                  <span className="font-medium text-foreground">{pendingDelete?.name}</span> будет удалена из списка.
-                  Файлы на диске останутся.
+                  <span className="font-medium text-foreground">
+                    {pendingDelete?.name}
+                  </span>{" "}
+                  будет удалена из списка. Файлы на диске останутся.
                 </p>
                 {pendingDelete?.directory && (
                   <div className="mt-2 flex items-center gap-1.5 rounded-md border bg-muted/40 px-2.5 py-1.5">
-                    <Hi icon={FolderOpenIcon} size={12} className="shrink-0 text-muted-foreground" />
+                    <Hi
+                      icon={FolderOpenIcon}
+                      size={12}
+                      className="shrink-0 text-muted-foreground"
+                    />
                     <span
                       className="truncate font-mono text-[11px] text-muted-foreground"
                       title={pendingDelete.directory}

@@ -23,7 +23,11 @@ import {
   FieldTitle,
 } from "@/components/ui/field";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useConnectionStore } from "@/stores/connection";
 import { useProfileStore } from "@/stores/profile";
@@ -84,7 +88,9 @@ function ModelPicker({
   }
 
   const current = options.find((o) => o.value === value);
-  const displayLabel = current ? `${current.provider} / ${current.label}` : placeholder;
+  const displayLabel = current
+    ? `${current.provider} / ${current.label}`
+    : placeholder;
 
   return (
     <Popover
@@ -110,7 +116,10 @@ function ModelPicker({
             <Hi
               icon={ArrowDown01Icon}
               size={14}
-              className={cn("shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+              className={cn(
+                "shrink-0 text-muted-foreground transition-transform",
+                open && "rotate-180",
+              )}
             />
           </Button>
         </PopoverTrigger>
@@ -132,7 +141,11 @@ function ModelPicker({
         style={{ width: "var(--radix-popover-trigger-width)" }}
       >
         <div className="flex items-center gap-2 border-b px-3 py-2">
-          <Hi icon={Search01Icon} size={14} className="shrink-0 text-muted-foreground" />
+          <Hi
+            icon={Search01Icon}
+            size={14}
+            className="shrink-0 text-muted-foreground"
+          />
           <Input
             autoFocus
             placeholder="Поиск модели…"
@@ -158,7 +171,9 @@ function ModelPicker({
               {placeholder}
             </button>
             {Object.keys(grouped).length === 0 && (
-              <p className="px-3 py-4 text-center text-sm text-muted-foreground">Ничего не найдено</p>
+              <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                Ничего не найдено
+              </p>
             )}
             {Object.entries(grouped).map(([provider, models]) => (
               <div key={provider}>
@@ -180,7 +195,9 @@ function ModelPicker({
                     )}
                   >
                     <span className="min-w-0 flex-1 truncate">{m.label}</span>
-                    {value === m.value ? <Hi icon={Tick02Icon} size={14} className="shrink-0" /> : null}
+                    {value === m.value ? (
+                      <Hi icon={Tick02Icon} size={14} className="shrink-0" />
+                    ) : null}
                   </button>
                 ))}
               </div>
@@ -252,7 +269,9 @@ function SectionProfile() {
     <div className="space-y-5">
       <div>
         <h2 className="text-base font-semibold">Профиль</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">Используется в отчётах и при выполнении лаб</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Используется в отчётах и при выполнении лаб
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -293,7 +312,12 @@ function SectionProfile() {
             </FieldLabel>
           </div>
           <FieldContent>
-            <Input id="pf-fac" placeholder="ИУ" value={form.faculty} onChange={(e) => update("faculty", e.target.value)} />
+            <Input
+              id="pf-fac"
+              placeholder="ИУ"
+              value={form.faculty}
+              onChange={(e) => update("faculty", e.target.value)}
+            />
           </FieldContent>
         </Field>
         <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
@@ -303,7 +327,12 @@ function SectionProfile() {
             </FieldLabel>
           </div>
           <FieldContent>
-            <Input id="pf-gr" placeholder="ИУ5-41" value={form.group} onChange={(e) => update("group", e.target.value)} />
+            <Input
+              id="pf-gr"
+              placeholder="ИУ5-41"
+              value={form.group}
+              onChange={(e) => update("group", e.target.value)}
+            />
           </FieldContent>
         </Field>
         <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
@@ -311,7 +340,9 @@ function SectionProfile() {
             <FieldLabel htmlFor="pf-var" className="text-sm font-medium">
               Вариант
             </FieldLabel>
-            <FieldDescription className="text-xs">Номер варианта для всех работ</FieldDescription>
+            <FieldDescription className="text-xs">
+              Номер варианта для всех работ
+            </FieldDescription>
           </div>
           <FieldContent>
             <Input
@@ -328,7 +359,9 @@ function SectionProfile() {
             <FieldLabel htmlFor="pf-extra" className="text-sm font-medium">
               Доп. информация
             </FieldLabel>
-            <FieldDescription className="text-xs">AI учитывает при выполнении</FieldDescription>
+            <FieldDescription className="text-xs">
+              AI учитывает при выполнении
+            </FieldDescription>
           </div>
           <FieldContent>
             <Textarea
@@ -410,7 +443,9 @@ function SectionLocal() {
     <div className="space-y-6">
       <div>
         <h2 className="text-base font-semibold">Локальный режим</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">OpenCode запускается на вашем компьютере</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          OpenCode запускается на вашем компьютере
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -423,22 +458,34 @@ function SectionLocal() {
             className="min-w-0 flex-1 font-mono text-sm"
           />
           {connection.connected ? (
-            <Button variant="outline" onClick={disconnect} className="shrink-0 gap-2">
+            <Button
+              variant="outline"
+              onClick={disconnect}
+              className="shrink-0 gap-2"
+            >
               <Hi icon={Wifi01Icon} size={16} className="text-primary" />
               Отключить
             </Button>
           ) : (
-            <Button onClick={() => void handleConnect()} disabled={isConnecting} className="shrink-0">
+            <Button
+              onClick={() => void handleConnect()}
+              disabled={isConnecting}
+              className="shrink-0"
+            >
               {isConnecting ? "Подключение…" : "Подключить"}
             </Button>
           )}
         </div>
         <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
-          <p className="text-xs font-medium text-muted-foreground">При разработке:</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            При разработке:
+          </p>
           <code className="block select-all rounded border bg-background px-3 py-2 font-mono text-xs">
             pnpm dev
           </code>
-          <p className="text-xs font-medium text-muted-foreground">Только сервер OpenCode:</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Только сервер OpenCode:
+          </p>
           <code className="block select-all rounded border bg-background px-3 py-2 font-mono text-xs">
             pnpm exec opencode serve --port 4096 --cors http://localhost:5173
           </code>
@@ -499,7 +546,8 @@ function SectionLocal() {
             type="single"
             value={modelMode}
             onValueChange={(v) => {
-              if (v === "simple" || v === "advanced") setModelMode(v as "simple" | "advanced");
+              if (v === "simple" || v === "advanced")
+                setModelMode(v as "simple" | "advanced");
             }}
             variant="outline"
             spacing={2}
@@ -514,24 +562,34 @@ function SectionLocal() {
         </div>
 
         {!connection.connected ? (
-          <p className="text-sm text-muted-foreground">Подключитесь к OpenCode, чтобы выбрать модели</p>
+          <p className="text-sm text-muted-foreground">
+            Подключитесь к OpenCode, чтобы выбрать модели
+          </p>
         ) : modelOptions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Нет подключённых провайдеров с моделями</p>
+          <p className="text-sm text-muted-foreground">
+            Нет подключённых провайдеров с моделями
+          </p>
         ) : modelMode === "simple" ? (
           <div className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Лёгкая модель используется для verificator, writer, qa, study-material. Тяжёлая — для report, coder,
-              math.
+              Лёгкая модель используется для verificator, writer, qa,
+              study-material. Тяжёлая — для report, coder, math.
             </p>
             <div className="space-y-3">
               <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
                 <div className="space-y-0.5 pt-2">
                   <FieldTitle>Лёгкая модель</FieldTitle>
-                  <FieldDescription className="text-xs">{LIGHT_AGENTS.join(", ")}</FieldDescription>
+                  <FieldDescription className="text-xs">
+                    {LIGHT_AGENTS.join(", ")}
+                  </FieldDescription>
                 </div>
                 <FieldContent>
                   <div className="flex items-center gap-2">
-                    <Hi icon={ZapIcon} size={16} className="shrink-0 text-amber-500" />
+                    <Hi
+                      icon={ZapIcon}
+                      size={16}
+                      className="shrink-0 text-amber-500"
+                    />
                     <div className="min-w-0 flex-1">
                       <ModelPicker
                         value={lightModel}
@@ -546,11 +604,17 @@ function SectionLocal() {
               <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
                 <div className="space-y-0.5 pt-2">
                   <FieldTitle>Тяжёлая модель</FieldTitle>
-                  <FieldDescription className="text-xs">{HEAVY_AGENTS.join(", ")}</FieldDescription>
+                  <FieldDescription className="text-xs">
+                    {HEAVY_AGENTS.join(", ")}
+                  </FieldDescription>
                 </div>
                 <FieldContent>
                   <div className="flex items-center gap-2">
-                    <Hi icon={Brain01Icon} size={16} className="shrink-0 text-purple-500" />
+                    <Hi
+                      icon={Brain01Icon}
+                      size={16}
+                      className="shrink-0 text-purple-500"
+                    />
                     <div className="min-w-0 flex-1">
                       <ModelPicker
                         value={heavyModel}
@@ -567,24 +631,42 @@ function SectionLocal() {
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Выберите модель для каждого агента. «По умолчанию» — модель из opencode.json шаблона.
+              Выберите модель для каждого агента. «По умолчанию» — модель из
+              opencode.json шаблона.
             </p>
             {TEMPLATE_AGENTS.map((agent) => (
-              <div key={agent.name} className="grid grid-cols-[160px_1fr] items-center gap-4">
+              <div
+                key={agent.name}
+                className="grid grid-cols-[160px_1fr] items-center gap-4"
+              >
                 <div>
                   <div className="flex items-center gap-1.5">
                     {agent.weight === "heavy" ? (
-                      <Hi icon={Brain01Icon} size={14} className="shrink-0 text-purple-500" />
+                      <Hi
+                        icon={Brain01Icon}
+                        size={14}
+                        className="shrink-0 text-purple-500"
+                      />
                     ) : (
-                      <Hi icon={ZapIcon} size={14} className="shrink-0 text-amber-500" />
+                      <Hi
+                        icon={ZapIcon}
+                        size={14}
+                        className="shrink-0 text-amber-500"
+                      />
                     )}
                     <p className="text-sm font-medium">{agent.label}</p>
                   </div>
-                  <p className="mt-0.5 truncate pl-5 text-xs text-muted-foreground">{agent.desc}</p>
+                  <p className="mt-0.5 truncate pl-5 text-xs text-muted-foreground">
+                    {agent.desc}
+                  </p>
                 </div>
                 <ModelPicker
                   value={agentModels[agent.name] ?? ""}
-                  onChange={(v) => (v ? setAgentModel(agent.name, v) : clearAgentModel(agent.name))}
+                  onChange={(v) =>
+                    v
+                      ? setAgentModel(agent.name, v)
+                      : clearAgentModel(agent.name)
+                  }
                   options={modelOptions}
                 />
               </div>
@@ -601,7 +683,9 @@ function SectionCloud() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold">Облако</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">Запуск лаб на серверах без установки OpenCode</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Запуск лаб на серверах без установки OpenCode
+        </p>
       </div>
       <ItemGroup>
         <Item variant="outline" size="sm">
@@ -610,7 +694,9 @@ function SectionCloud() {
           </ItemMedia>
           <ItemContent>
             <ItemTitle>Подписка через Telegram Stars</ItemTitle>
-            <ItemDescription>Выполнение лаб в облаке — в разработке</ItemDescription>
+            <ItemDescription>
+              Выполнение лаб в облаке — в разработке
+            </ItemDescription>
           </ItemContent>
           <ItemActions>
             <Button size="sm" variant="secondary" disabled>

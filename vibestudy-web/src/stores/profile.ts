@@ -7,7 +7,7 @@ export interface UserProfile {
   group: string;
   fullName: string;
   variantGroup: string; // e.g. "Вариант 5"
-  extraInfo: string;    // free-form additional info
+  extraInfo: string; // free-form additional info
 }
 
 interface ProfileStore {
@@ -26,12 +26,10 @@ export const useProfileStore = create<ProfileStore>()(
 
       setProfile: (profile) => set({ profile }),
 
-      completeOnboarding: (profile) =>
-        set({ profile, onboardingDone: true }),
+      completeOnboarding: (profile) => set({ profile, onboardingDone: true }),
 
-      resetOnboarding: () =>
-        set({ profile: null, onboardingDone: false }),
+      resetOnboarding: () => set({ profile: null, onboardingDone: false }),
     }),
-    { name: "vibestudy-profile" }
-  )
+    { name: "vibestudy-profile" },
+  ),
 );

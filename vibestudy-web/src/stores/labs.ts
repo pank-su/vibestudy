@@ -16,7 +16,10 @@ export interface Lab {
 interface LabsStore {
   labs: Lab[];
   addLab: (lab: Omit<Lab, "updatedAt">) => void;
-  updateLab: (id: string, updates: Partial<Omit<Lab, "id" | "updatedAt">>) => void;
+  updateLab: (
+    id: string,
+    updates: Partial<Omit<Lab, "id" | "updatedAt">>,
+  ) => void;
   removeLab: (id: string) => void;
 }
 
@@ -33,7 +36,7 @@ export const useLabsStore = create<LabsStore>()(
       updateLab: (id, updates) =>
         set((state) => ({
           labs: state.labs.map((l) =>
-            l.id === id ? { ...l, ...updates, updatedAt: new Date() } : l
+            l.id === id ? { ...l, ...updates, updatedAt: new Date() } : l,
           ),
         })),
 
@@ -53,6 +56,6 @@ export const useLabsStore = create<LabsStore>()(
           }));
         }
       },
-    }
-  )
+    },
+  ),
 );

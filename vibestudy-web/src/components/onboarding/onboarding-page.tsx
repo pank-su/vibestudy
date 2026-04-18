@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, ArrowLeft, GraduationCap, User, Settings2 } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  GraduationCap,
+  User,
+  Settings2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +21,8 @@ import { useProfileStore, type UserProfile } from "@/stores/profile";
 
 const STEPS = [
   { id: "university", label: "Учебное заведение", icon: GraduationCap },
-  { id: "identity",   label: "Ваши данные",       icon: User },
-  { id: "extra",      label: "Доп. информация",   icon: Settings2 },
+  { id: "identity", label: "Ваши данные", icon: User },
+  { id: "extra", label: "Доп. информация", icon: Settings2 },
 ] as const;
 
 export function OnboardingPage() {
@@ -34,7 +40,7 @@ export function OnboardingPage() {
   }
 
   function canNext(): boolean {
-    if (step === 0) return !!(form.university?.trim());
+    if (step === 0) return !!form.university?.trim();
     if (step === 1) return !!(form.fullName?.trim() && form.group?.trim());
     return true;
   }
@@ -44,11 +50,11 @@ export function OnboardingPage() {
     if (isLast) {
       completeOnboarding({
         university: form.university ?? "",
-        faculty:    form.faculty    ?? "",
-        group:      form.group      ?? "",
-        fullName:   form.fullName   ?? "",
+        faculty: form.faculty ?? "",
+        group: form.group ?? "",
+        fullName: form.fullName ?? "",
         variantGroup: form.variantGroup ?? "",
-        extraInfo:  form.extraInfo  ?? "",
+        extraInfo: form.extraInfo ?? "",
       });
       navigate({ to: "/new" });
     } else {
@@ -59,7 +65,6 @@ export function OnboardingPage() {
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-
         {/* Logo */}
         <div className="mb-10 flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-base">
@@ -77,21 +82,25 @@ export function OnboardingPage() {
                   i < step
                     ? "bg-primary text-primary-foreground"
                     : i === step
-                    ? "border-2 border-primary text-primary"
-                    : "border-2 border-border text-muted-foreground"
+                      ? "border-2 border-primary text-primary"
+                      : "border-2 border-border text-muted-foreground"
                 }`}
               >
                 {i < step ? "✓" : i + 1}
               </div>
               <span
                 className={`text-sm ${
-                  i === step ? "font-medium text-foreground" : "text-muted-foreground"
+                  i === step
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
                 {s.label}
               </span>
               {i < STEPS.length - 1 && (
-                <div className={`mx-1 h-px w-6 ${i < step ? "bg-primary" : "bg-border"}`} />
+                <div
+                  className={`mx-1 h-px w-6 ${i < step ? "bg-primary" : "bg-border"}`}
+                />
               )}
             </div>
           ))}
@@ -102,34 +111,44 @@ export function OnboardingPage() {
           {step === 0 && (
             <>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Ваш университет</h1>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Ваш университет
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Эти данные будут использоваться при оформлении отчётов
                 </p>
               </div>
               <FieldGroup className="gap-4">
                 <Field>
-                  <FieldLabel htmlFor="onb-university">Учебное заведение *</FieldLabel>
+                  <FieldLabel htmlFor="onb-university">
+                    Учебное заведение *
+                  </FieldLabel>
                   <FieldContent>
                     <Input
                       id="onb-university"
                       placeholder="МГТУ им. Баумана"
                       value={form.university ?? ""}
                       onChange={(e) => update("university", e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && canNext() && handleNext()
+                      }
                       autoFocus
                     />
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="onb-faculty">Факультет / Институт</FieldLabel>
+                  <FieldLabel htmlFor="onb-faculty">
+                    Факультет / Институт
+                  </FieldLabel>
                   <FieldContent>
                     <Input
                       id="onb-faculty"
                       placeholder="ИУ (Информатика и системы управления)"
                       value={form.faculty ?? ""}
                       onChange={(e) => update("faculty", e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && canNext() && handleNext()
+                      }
                     />
                   </FieldContent>
                 </Field>
@@ -140,7 +159,9 @@ export function OnboardingPage() {
           {step === 1 && (
             <>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Ваши данные</h1>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Ваши данные
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   ФИО и учебная группа для титульных листов
                 </p>
@@ -154,7 +175,9 @@ export function OnboardingPage() {
                       placeholder="Иванов Иван Иванович"
                       value={form.fullName ?? ""}
                       onChange={(e) => update("fullName", e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && form.group?.trim() && handleNext()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && form.group?.trim() && handleNext()
+                      }
                       autoFocus
                     />
                   </FieldContent>
@@ -167,7 +190,9 @@ export function OnboardingPage() {
                       placeholder="ИУ5-41"
                       value={form.group ?? ""}
                       onChange={(e) => update("group", e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && canNext() && handleNext()
+                      }
                     />
                   </FieldContent>
                 </Field>
@@ -178,14 +203,18 @@ export function OnboardingPage() {
           {step === 2 && (
             <>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Дополнительно</h1>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Дополнительно
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Необязательно — AI будет учитывать это при выполнении работ
                 </p>
               </div>
               <FieldGroup className="gap-4">
                 <Field>
-                  <FieldLabel htmlFor="onb-variant">Вариант по умолчанию</FieldLabel>
+                  <FieldLabel htmlFor="onb-variant">
+                    Вариант по умолчанию
+                  </FieldLabel>
                   <FieldContent>
                     <Input
                       id="onb-variant"
@@ -249,11 +278,11 @@ export function OnboardingPage() {
               onClick={() => {
                 completeOnboarding({
                   university: form.university ?? "",
-                  faculty:    form.faculty    ?? "",
-                  group:      form.group      ?? "",
-                  fullName:   form.fullName   ?? "",
+                  faculty: form.faculty ?? "",
+                  group: form.group ?? "",
+                  fullName: form.fullName ?? "",
                   variantGroup: form.variantGroup ?? "",
-                  extraInfo:  form.extraInfo  ?? "",
+                  extraInfo: form.extraInfo ?? "",
                 });
                 navigate({ to: "/new" });
               }}

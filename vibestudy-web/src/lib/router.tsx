@@ -65,10 +65,10 @@ const WorkspaceRoute = createRoute({
   getParentRoute: () => AppRoute,
   path: "/workspace/$labId",
   validateSearch: (search: Record<string, unknown>) => ({
-    sessionId:     (search.sessionId     as string | undefined),
-    directory:     (search.directory     as string | undefined),
-    initialPrompt: (search.initialPrompt as string | undefined),
-    system:        (search.system        as string | undefined),
+    sessionId: search.sessionId as string | undefined,
+    directory: search.directory as string | undefined,
+    initialPrompt: search.initialPrompt as string | undefined,
+    system: search.system as string | undefined,
   }),
   beforeLoad: () => {
     const { onboardingDone } = useProfileStore.getState();
@@ -88,12 +88,7 @@ const SettingsRoute = createRoute({
 
 const routeTree = RootRoute.addChildren([
   OnboardingRoute,
-  AppRoute.addChildren([
-    IndexRoute,
-    NewRoute,
-    WorkspaceRoute,
-    SettingsRoute,
-  ]),
+  AppRoute.addChildren([IndexRoute, NewRoute, WorkspaceRoute, SettingsRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

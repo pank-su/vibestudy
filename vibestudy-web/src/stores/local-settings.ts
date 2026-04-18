@@ -36,13 +36,38 @@ export const LIGHT_AGENTS = ["verificator", "writer", "qa", "study-material"];
 export const HEAVY_AGENTS = ["report", "coder", "math"];
 // All template agents in display order
 export const TEMPLATE_AGENTS = [
-  { name: "report",          label: "Report",          desc: "Оркестратор: управляет всем процессом",        weight: "heavy" },
-  { name: "coder",           label: "Coder",           desc: "Пишет код решения",                           weight: "heavy" },
-  { name: "math",            label: "Math",            desc: "Математические задачи через Jupyter",         weight: "heavy" },
-  { name: "verificator",     label: "Verificator",     desc: "Проверяет методичку, задаёт вопросы",         weight: "light" },
-  { name: "qa",              label: "QA",              desc: "Тестирует код",                               weight: "light" },
-  { name: "writer",          label: "Writer",          desc: "Пишет отчёт в Typst",                         weight: "light" },
-  { name: "study-material",  label: "Study Material",  desc: "Генерирует учебные материалы",                weight: "light" },
+  {
+    name: "report",
+    label: "Report",
+    desc: "Оркестратор: управляет всем процессом",
+    weight: "heavy",
+  },
+  { name: "coder", label: "Coder", desc: "Пишет код решения", weight: "heavy" },
+  {
+    name: "math",
+    label: "Math",
+    desc: "Математические задачи через Jupyter",
+    weight: "heavy",
+  },
+  {
+    name: "verificator",
+    label: "Verificator",
+    desc: "Проверяет методичку, задаёт вопросы",
+    weight: "light",
+  },
+  { name: "qa", label: "QA", desc: "Тестирует код", weight: "light" },
+  {
+    name: "writer",
+    label: "Writer",
+    desc: "Пишет отчёт в Typst",
+    weight: "light",
+  },
+  {
+    name: "study-material",
+    label: "Study Material",
+    desc: "Генерирует учебные материалы",
+    weight: "light",
+  },
 ] as const;
 
 export const useLocalSettingsStore = create<
@@ -69,6 +94,6 @@ export const useLocalSettingsStore = create<
           return { agentModels: next };
         }),
     }),
-    { name: "vibestudy-local-settings" }
-  )
+    { name: "vibestudy-local-settings" },
+  ),
 );

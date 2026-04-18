@@ -51,7 +51,8 @@ export function OpenCodeConnectionGate() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               Ожидаем сервер на{" "}
               <span className="font-mono text-foreground/80">{baseUrl}</span>.
-              Команда <span className="font-mono">pnpm dev</span> поднимает Vite и OpenCode вместе.
+              Команда <span className="font-mono">pnpm dev</span> поднимает Vite
+              и OpenCode вместе.
             </p>
           </div>
         </>
@@ -62,7 +63,8 @@ export function OpenCodeConnectionGate() {
           <div className="max-w-md space-y-2">
             <p className="text-sm font-medium">OpenCode недоступен</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Запустите приложение из папки <span className="font-mono">vibestudy-web</span>:
+              Запустите приложение из папки{" "}
+              <span className="font-mono">vibestudy-web</span>:
             </p>
             <code className="block rounded-lg border bg-muted/50 px-3 py-2 text-left text-[11px] font-mono">
               pnpm dev
@@ -70,7 +72,8 @@ export function OpenCodeConnectionGate() {
             <p className="text-xs text-muted-foreground">
               Либо в отдельном терминале:{" "}
               <span className="font-mono text-[11px] text-foreground/80 break-all">
-                pnpm exec opencode serve --port 4096 --cors http://localhost:5173
+                pnpm exec opencode serve --port 4096 --cors
+                http://localhost:5173
               </span>
             </p>
           </div>

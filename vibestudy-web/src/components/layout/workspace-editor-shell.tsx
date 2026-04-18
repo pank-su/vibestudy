@@ -77,10 +77,7 @@ export function WorkspaceEditorShell({
             )}
           >
             {tabModel.paths.length === 0 ? (
-              <TabsTrigger
-                value={EMPTY_TAB}
-                disabled
-              >
+              <TabsTrigger value={EMPTY_TAB} disabled>
                 Редактор
               </TabsTrigger>
             ) : (
@@ -109,7 +106,7 @@ export function WorkspaceEditorShell({
                     >
                       <Hi icon={Cancel01Icon} size={14} />
                     </Button>
-                    </div>
+                  </div>
                 );
               })
             )}

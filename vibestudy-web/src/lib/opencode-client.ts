@@ -47,7 +47,7 @@ function getBaseUrl(): string {
 /** Direct fetch wrapper — throws on non-ok responses */
 async function apiFetch<T>(
   path: string,
-  options?: RequestInit & { query?: Record<string, string | undefined> }
+  options?: RequestInit & { query?: Record<string, string | undefined> },
 ): Promise<T> {
   const base = getBaseUrl();
   let url = `${base}${path}`;
@@ -61,7 +61,10 @@ async function apiFetch<T>(
   }
   const { query: _q, ...fetchOpts } = options ?? {};
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(fetchOpts.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(fetchOpts.headers ?? {}),
+    },
     ...fetchOpts,
   });
   if (!res.ok) {
@@ -76,15 +79,18 @@ async function apiFetch<T>(
 // ── query keys ────────────────────────────────────────────────────────────
 
 export const qk = {
-  sessions:    ()                    => ["sessions"]              as const,
-  session:     (id: string)          => ["session", id]           as const,
-  messages:    (sessionId: string, directory = "") =>
+  sessions: () => ["sessions"] as const,
+  session: (id: string) => ["session", id] as const,
+  messages: (sessionId: string, directory = "") =>
     ["messages", sessionId, directory] as const,
-  files:       (dir: string, p: string) => ["files", dir, p]     as const,
-  fileContent: (dir: string, p: string) => ["file", dir, p]      as const,
-  sessionDiff: (sessionId: string, messageId: string | undefined, directory: string) =>
-    ["session-diff", sessionId, messageId ?? "", directory] as const,
-  vcs:         (directory: string)   => ["vcs", directory]       as const,
+  files: (dir: string, p: string) => ["files", dir, p] as const,
+  fileContent: (dir: string, p: string) => ["file", dir, p] as const,
+  sessionDiff: (
+    sessionId: string,
+    messageId: string | undefined,
+    directory: string,
+  ) => ["session-diff", sessionId, messageId ?? "", directory] as const,
+  vcs: (directory: string) => ["vcs", directory] as const,
 };
 
 // ── sessions ───────────────────────────────────────────────────────────────
@@ -101,7 +107,13 @@ export function useSessions() {
 export function useCreateSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ title, directory }: { title?: string; directory: string }) => {
+    mutationFn: async ({
+      title,
+      directory,
+    }: {
+      title?: string;
+      directory: string;
+    }) => {
       const session = await apiFetch<SDKSession>("/session", {
         method: "POST",
         query: { directory },
@@ -145,9 +157,12 @@ export function useSendMessage() {
       system?: string;
       directory?: string;
     }) => {
-      type PartInput = { type: "text"; text: string } | { type: "file"; url: string; mime: string };
+      type PartInput =
+        | { type: "text"; text: string }
+        | { type: "file"; url: string; mime: string };
       const parts: PartInput[] = [{ type: "text", text }];
-      if (fileUrl && fileMime) parts.push({ type: "file", url: fileUrl, mime: fileMime });
+      if (fileUrl && fileMime)
+        parts.push({ type: "file", url: fileUrl, mime: fileMime });
       await apiFetch<void>(`/session/${sessionId}/prompt_async`, {
         method: "POST",
         query: directory ? { directory } : undefined,
@@ -160,7 +175,10 @@ export function useSendMessage() {
 export function useAbortSession() {
   return useMutation({
     mutationFn: (sessionId: string) =>
-      apiFetch<void>(`/session/${sessionId}/abort`, { method: "POST", body: JSON.stringify({}) }),
+      apiFetch<void>(`/session/${sessionId}/abort`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
   });
 }
 
@@ -197,7 +215,7 @@ export function useFileContent(directory: string, path: string) {
     queryFn: async () => {
       const res = await apiFetch<{ type: string; content: string }>(
         "/file/content",
-        { query: { directory, path } }
+        { query: { directory, path } },
       );
       return res?.content ?? "";
     },
@@ -214,7 +232,7 @@ export function useFileContent(directory: string, path: string) {
 export function subscribeEvents(
   _clientOrBaseUrl: OpencodeClient | string | null,
   onEvent: (event: Record<string, unknown>) => void,
-  onError?: (err: unknown) => void
+  onError?: (err: unknown) => void,
 ): () => void {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/global/event`;
@@ -272,8 +290,18 @@ export function useProviders() {
     queryKey: ["providers"] as const,
     enabled: connected,
     queryFn: async () => {
-      const data = await apiFetch<{ all: SDKProvider[]; connected: string[]; default: Record<string, string> }>("/provider");
-      return data ?? { all: [] as SDKProvider[], connected: [] as string[], default: {} as Record<string, string> };
+      const data = await apiFetch<{
+        all: SDKProvider[];
+        connected: string[];
+        default: Record<string, string>;
+      }>("/provider");
+      return (
+        data ?? {
+          all: [] as SDKProvider[],
+          connected: [] as string[],
+          default: {} as Record<string, string>,
+        }
+      );
     },
   });
 }
@@ -283,7 +311,10 @@ export function useAgents(directory?: string) {
   return useQuery({
     queryKey: ["agents", directory] as const,
     enabled: connected,
-    queryFn: () => apiFetch<SDKAgent[]>("/agent", { query: directory ? { directory } : undefined }),
+    queryFn: () =>
+      apiFetch<SDKAgent[]>("/agent", {
+        query: directory ? { directory } : undefined,
+      }),
   });
 }
 
@@ -347,7 +378,7 @@ export type FileDiffRow = {
 export async function fetchSessionDiff(
   sessionId: string,
   directory: string,
-  messageID?: string
+  messageID?: string,
 ) {
   return apiFetch<FileDiffRow[]>(`/session/${sessionId}/diff`, {
     query: {
@@ -360,7 +391,7 @@ export async function fetchSessionDiff(
 export function useSessionDiff(
   sessionId: string | undefined,
   directory: string | undefined,
-  messageID: string | undefined
+  messageID: string | undefined,
 ) {
   const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({

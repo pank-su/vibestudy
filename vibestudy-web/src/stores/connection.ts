@@ -1,4 +1,7 @@
-import { createOpencodeClient, type OpencodeClient } from "@opencode-ai/sdk/client";
+import {
+  createOpencodeClient,
+  type OpencodeClient,
+} from "@opencode-ai/sdk/client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -44,7 +47,12 @@ export const useConnectionStore = create<ConnectionStore>()(
           // connection failed
         }
         set((state) => ({
-          connection: { ...state.connection, baseUrl, connected: false, client: null },
+          connection: {
+            ...state.connection,
+            baseUrl,
+            connected: false,
+            client: null,
+          },
         }));
         return false;
       },
@@ -102,10 +110,10 @@ export const useConnectionStore = create<ConnectionStore>()(
         connection: {
           mode: state.connection.mode,
           baseUrl: state.connection.baseUrl,
-          connected: false,   // always start disconnected
+          connected: false, // always start disconnected
           client: null,
         },
       }),
-    }
-  )
+    },
+  ),
 );

@@ -61,7 +61,11 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
   const unrevert = useUnrevertSession();
   const gitInit = useGitInit();
 
-  const { data: vcs, isError: vcsError, isLoading: vcsLoading } = useVcsInfo(directory);
+  const {
+    data: vcs,
+    isError: vcsError,
+    isLoading: vcsLoading,
+  } = useVcsInfo(directory);
   const gitReady = !!directory && !vcsError && !!vcs?.branch;
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
   useEffect(() => {
@@ -71,7 +75,7 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
   const { data: diffRows, isLoading: diffLoading } = useSessionDiff(
     sessionId,
     directory,
-    selectedMsgId ?? undefined
+    selectedMsgId ?? undefined,
   );
 
   const versions = (messages ?? []).filter((m) => m.role === "assistant");
@@ -124,15 +128,25 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
       {directory && (
         <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-4 py-2">
           <div className="flex items-center gap-2 font-sans text-[11px]">
-            <Hi icon={GitBranchIcon} size={14} className="shrink-0 text-muted-foreground" />
+            <Hi
+              icon={GitBranchIcon}
+              size={14}
+              className="shrink-0 text-muted-foreground"
+            />
             {vcsLoading ? (
               <span className="text-muted-foreground">Git…</span>
             ) : gitReady ? (
-              <span className="truncate text-muted-foreground" title={vcs?.branch}>
-                Ветка: <span className="font-mono text-foreground">{vcs?.branch}</span>
+              <span
+                className="truncate text-muted-foreground"
+                title={vcs?.branch}
+              >
+                Ветка:{" "}
+                <span className="font-mono text-foreground">{vcs?.branch}</span>
               </span>
             ) : (
-              <span className="text-amber-700 dark:text-amber-400">Репозиторий не инициализирован</span>
+              <span className="text-amber-700 dark:text-amber-400">
+                Репозиторий не инициализирован
+              </span>
             )}
           </div>
           {!gitReady && !vcsLoading && (
@@ -176,10 +190,19 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
             <ScrollArea className="max-h-40">
               <div className="flex flex-col gap-2 pr-2 pt-1">
                 {diffRows.map((d) => (
-                  <div key={d.file} className="rounded-md border border-border bg-background p-2">
+                  <div
+                    key={d.file}
+                    className="rounded-md border border-border bg-background p-2"
+                  >
                     <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                      <Hi icon={FileDiffIcon} size={14} className="shrink-0 text-muted-foreground" />
-                      <span className="truncate" title={d.file}>{d.file}</span>
+                      <Hi
+                        icon={FileDiffIcon}
+                        size={14}
+                        className="shrink-0 text-muted-foreground"
+                      />
+                      <span className="truncate" title={d.file}>
+                        {d.file}
+                      </span>
                       <span className="ml-auto shrink-0 text-green-600 tabular-nums dark:text-green-400">
                         +{d.additions}
                       </span>
@@ -193,7 +216,9 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
               </div>
             </ScrollArea>
           ) : (
-            <p className="py-2 text-center font-sans text-[11px] text-muted-foreground">Нет diff для этой версии</p>
+            <p className="py-2 text-center font-sans text-[11px] text-muted-foreground">
+              Нет diff для этой версии
+            </p>
           )}
         </div>
       )}
@@ -201,12 +226,21 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
       <ScrollArea className="min-h-0 flex-1">
         <div className="px-1 pb-2">
           {versions.length === 0 && !isLoading && (
-            <p className="px-4 py-4 text-center font-sans text-xs text-muted-foreground">Нет версий</p>
+            <p className="px-4 py-4 text-center font-sans text-xs text-muted-foreground">
+              Нет версий
+            </p>
           )}
           {versions.map((msg, i) => {
-            const parts = (msg as unknown as { parts?: Array<{ type: string; text?: string }> }).parts ?? [];
+            const parts =
+              (
+                msg as unknown as {
+                  parts?: Array<{ type: string; text?: string }>;
+                }
+              ).parts ?? [];
             const textPart = parts.find((p) => p.type === "text");
-            const description = textPart?.text?.slice(0, 60).replace(/\n/g, " ") ?? "Ответ агента";
+            const description =
+              textPart?.text?.slice(0, 60).replace(/\n/g, " ") ??
+              "Ответ агента";
             const meta = msg as unknown as {
               time?: { created?: number };
               modelID?: string;
@@ -226,13 +260,23 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
                     setSelectedMsgId((id) => (id === msg.id ? null : msg.id));
                   }}
                   disabled={revert.isPending}
-                  title={directory ? "Показать изменения файлов (diff)" : "Укажите директорию лабы для diff"}
+                  title={
+                    directory
+                      ? "Показать изменения файлов (diff)"
+                      : "Укажите директорию лабы для diff"
+                  }
                 >
                   <div className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-muted-foreground">
-                    {expanded ? <Hi icon={ArrowDown01Icon} size={16} /> : <Hi icon={BotIcon} size={16} />}
+                    {expanded ? (
+                      <Hi icon={ArrowDown01Icon} size={16} />
+                    ) : (
+                      <Hi icon={BotIcon} size={16} />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`font-sans text-xs ${expanded ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}>
+                    <p
+                      className={`font-sans text-xs ${expanded ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}
+                    >
                       v{vNum}
                       {meta.mode && (
                         <span className="ml-1.5 rounded bg-muted px-1 py-0.5 font-mono text-[10px] font-normal text-muted-foreground">
@@ -245,11 +289,15 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
                         </span>
                       )}
                     </p>
-                    <p className="truncate font-sans text-xs text-muted-foreground">{description}</p>
+                    <p className="truncate font-sans text-xs text-muted-foreground">
+                      {description}
+                    </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {ts && (
-                      <span className="font-sans text-[10px] text-muted-foreground/80">{formatTime(ts)}</span>
+                      <span className="font-sans text-[10px] text-muted-foreground/80">
+                        {formatTime(ts)}
+                      </span>
                     )}
                   </div>
                 </button>
@@ -260,7 +308,9 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
                     className="h-6 gap-1 font-sans text-[10px] text-muted-foreground hover:text-foreground"
                     type="button"
                     disabled={revert.isPending}
-                    onClick={() => revert.mutate({ sessionId, messageId: msg.id, directory })}
+                    onClick={() =>
+                      revert.mutate({ sessionId, messageId: msg.id, directory })
+                    }
                   >
                     <Hi icon={Rotate01Icon} size={14} />
                     Откат
@@ -270,43 +320,66 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
             );
           })}
 
-          {(messages ?? []).filter((m) => m.role === "user").map((msg, i) => {
-            const parts = (msg as unknown as { parts?: Array<{ type: string; text?: string }> }).parts ?? [];
-            const textPart = parts.find((p) => p.type === "text");
-            const description = textPart?.text?.slice(0, 60).replace(/\n/g, " ") ?? "Запрос";
-            const meta = msg as unknown as { time?: { created?: number }; agent?: string };
-            const ts = meta.time?.created;
+          {(messages ?? [])
+            .filter((m) => m.role === "user")
+            .map((msg, i) => {
+              const parts =
+                (
+                  msg as unknown as {
+                    parts?: Array<{ type: string; text?: string }>;
+                  }
+                ).parts ?? [];
+              const textPart = parts.find((p) => p.type === "text");
+              const description =
+                textPart?.text?.slice(0, 60).replace(/\n/g, " ") ?? "Запрос";
+              const meta = msg as unknown as {
+                time?: { created?: number };
+                agent?: string;
+              };
+              const ts = meta.time?.created;
 
-            return (
-              <button
-                key={msg.id}
-                type="button"
-                className="group flex w-full items-start gap-2 px-4 py-2 text-left opacity-70 transition-colors hover:bg-muted/60 hover:opacity-100"
-                onClick={() => revert.mutate({ sessionId, messageId: msg.id, directory })}
-                disabled={revert.isPending}
-                title="Откатиться к этому запросу"
-              >
-                <div className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-muted-foreground">
-                  <Hi icon={UserIcon} size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-sans text-xs font-medium text-muted-foreground">
-                    запрос {i + 1}
-                    {meta.agent && (
-                      <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">@{meta.agent}</span>
+              return (
+                <button
+                  key={msg.id}
+                  type="button"
+                  className="group flex w-full items-start gap-2 px-4 py-2 text-left opacity-70 transition-colors hover:bg-muted/60 hover:opacity-100"
+                  onClick={() =>
+                    revert.mutate({ sessionId, messageId: msg.id, directory })
+                  }
+                  disabled={revert.isPending}
+                  title="Откатиться к этому запросу"
+                >
+                  <div className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-muted-foreground">
+                    <Hi icon={UserIcon} size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans text-xs font-medium text-muted-foreground">
+                      запрос {i + 1}
+                      {meta.agent && (
+                        <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                          @{meta.agent}
+                        </span>
+                      )}
+                    </p>
+                    <p className="truncate font-sans text-xs text-muted-foreground">
+                      {description}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {ts && (
+                      <span className="font-sans text-[10px] text-muted-foreground/70">
+                        {formatTime(ts)}
+                      </span>
                     )}
-                  </p>
-                  <p className="truncate font-sans text-xs text-muted-foreground">{description}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {ts && (
-                    <span className="font-sans text-[10px] text-muted-foreground/70">{formatTime(ts)}</span>
-                  )}
-                  <Hi icon={Rotate01Icon} size={14} className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-              </button>
-            );
-          })}
+                    <Hi
+                      icon={Rotate01Icon}
+                      size={14}
+                      className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    />
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </ScrollArea>
     </div>
