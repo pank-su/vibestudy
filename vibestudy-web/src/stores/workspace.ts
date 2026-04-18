@@ -71,7 +71,9 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>(
     openEditorFile: (path) =>
       set((s) => ({
         activeFile: path,
-        openTabPaths: s.openTabPaths.includes(path) ? s.openTabPaths : [...s.openTabPaths, path],
+        openTabPaths: s.openTabPaths.includes(path)
+          ? s.openTabPaths
+          : [...s.openTabPaths, path],
       })),
     closeEditorTab: (path) =>
       set((s) => {
@@ -94,9 +96,9 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>(
     updateChatMessage: (id, content) =>
       set((state) => ({
         chatMessages: state.chatMessages.map((m) =>
-          m.id === id ? { ...m, content, isLoading: false } : m
+          m.id === id ? { ...m, content, isLoading: false } : m,
         ),
       })),
     setProcessing: (processing) => set({ isProcessing: processing }),
-  })
+  }),
 );

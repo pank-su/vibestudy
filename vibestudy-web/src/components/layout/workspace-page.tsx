@@ -99,22 +99,22 @@ function toggleDesktopVersionsPanel(
 
 export function WorkspacePage() {
   const { labId } = useParams({ strict: false });
-  const search    = useSearch({ strict: false });
-  const navigate  = useNavigate();
-  const isMobile    = useIsMobile();
+  const search = useSearch({ strict: false });
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [mobileOverlay, setMobileOverlay] = useState<MobileOverlay>(null);
   const openedChatForPromptRef = useRef(false);
 
-  const sidebarPanelRef  = usePanelRef();
-  const filesPanelRef    = usePanelRef();
+  const sidebarPanelRef = usePanelRef();
+  const filesPanelRef = usePanelRef();
   const versionsPanelRef = usePanelRef();
-  const previewPanelRef  = usePanelRef();
-  const chatPanelRef     = usePanelRef();
+  const previewPanelRef = usePanelRef();
+  const chatPanelRef = usePanelRef();
 
   const { activeFile, resetEditorTabs } = useWorkspaceStore();
-  const { connected }  = useConnectionStore((s) => s.connection);
+  const { connected } = useConnectionStore((s) => s.connection);
 
-  const lab       = useLabsStore((s) => s.labs.find((l) => l.id === labId));
+  const lab = useLabsStore((s) => s.labs.find((l) => l.id === labId));
   const updateLab = useLabsStore((s) => s.updateLab);
 
   const sessionId = lab?.sessionId ?? search.sessionId;
@@ -126,9 +126,18 @@ export function WorkspacePage() {
 
   useEffect(() => {
     if (!labId) return;
-    if (search.sessionId && !lab?.sessionId) updateLab(labId, { sessionId: search.sessionId });
-    if (search.directory && !lab?.directory)  updateLab(labId, { directory: search.directory });
-  }, [labId, search.sessionId, search.directory, lab?.sessionId, lab?.directory, updateLab]);
+    if (search.sessionId && !lab?.sessionId)
+      updateLab(labId, { sessionId: search.sessionId });
+    if (search.directory && !lab?.directory)
+      updateLab(labId, { directory: search.directory });
+  }, [
+    labId,
+    search.sessionId,
+    search.directory,
+    lab?.sessionId,
+    lab?.directory,
+    updateLab,
+  ]);
 
   useEffect(() => {
     resetEditorTabs();
@@ -159,19 +168,33 @@ export function WorkspacePage() {
           </h1>
           {connected && (
             <div className="flex min-w-0 max-w-[min(100%,200px)] items-center gap-1.5 truncate rounded-lg bg-muted px-2 py-1.5 font-sans text-[11px] text-foreground sm:max-w-none sm:gap-2.5 sm:px-3 sm:py-2 sm:text-[13px]">
-              <Hi icon={Wifi01Icon} size={16} className="shrink-0 text-primary" />
+              <Hi
+                icon={Wifi01Icon}
+                size={16}
+                className="shrink-0 text-primary"
+              />
               {sessionShort ? (
                 <>
                   <span className="tabular-nums">{sessionShort}</span>
-                  <span className="text-[12px] text-muted-foreground">сессия</span>
+                  <span className="text-[12px] text-muted-foreground">
+                    сессия
+                  </span>
                 </>
               ) : (
-                <span className="text-[12px] text-muted-foreground">нет сессии</span>
+                <span className="text-[12px] text-muted-foreground">
+                  нет сессии
+                </span>
               )}
-              <span className="px-1.5 text-[13px] text-muted-foreground/40" aria-hidden>
+              <span
+                className="px-1.5 text-[13px] text-muted-foreground/40"
+                aria-hidden
+              >
                 ◀
               </span>
-              <span className="px-1.5 text-[13px] text-muted-foreground/40" aria-hidden>
+              <span
+                className="px-1.5 text-[13px] text-muted-foreground/40"
+                aria-hidden
+              >
                 ▶
               </span>
             </div>
@@ -231,7 +254,10 @@ export function WorkspacePage() {
                   onClick={() =>
                     isMobile
                       ? toggleMobileOverlay(setMobileOverlay, "project")
-                      : toggleDesktopVersionsPanel(sidebarPanelRef, versionsPanelRef)
+                      : toggleDesktopVersionsPanel(
+                          sidebarPanelRef,
+                          versionsPanelRef,
+                        )
                   }
                   type="button"
                 >
@@ -299,7 +325,11 @@ export function WorkspacePage() {
       {showNoSession && (
         <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-amber-500/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5">
           <div className="flex min-w-0 items-start gap-2 sm:items-center">
-            <Hi icon={AlertCircleIcon} size={16} className="mt-0.5 shrink-0 text-amber-600 sm:mt-0" />
+            <Hi
+              icon={AlertCircleIcon}
+              size={16}
+              className="mt-0.5 shrink-0 text-amber-600 sm:mt-0"
+            />
             <p className="font-sans text-[11px] leading-snug text-amber-800 sm:text-xs dark:text-amber-400">
               OpenCode подключён, но сессия не создана — файлы и чат недоступны
             </p>
@@ -333,7 +363,10 @@ export function WorkspacePage() {
               collapsible
               collapsedSize={0}
             >
-              <ResizablePanelGroup orientation="vertical" className="h-full bg-muted/40">
+              <ResizablePanelGroup
+                orientation="vertical"
+                className="h-full bg-muted/40"
+              >
                 <ResizablePanel
                   id="ws-files"
                   panelRef={filesPanelRef}
@@ -343,7 +376,11 @@ export function WorkspacePage() {
                   collapsedSize={0}
                   className="min-h-0"
                 >
-                  <FileTree key={labId} directory={directory} sessionId={sessionId} />
+                  <FileTree
+                    key={labId}
+                    directory={directory}
+                    sessionId={sessionId}
+                  />
                 </ResizablePanel>
 
                 <ResizableHandle withHandle />
@@ -358,16 +395,30 @@ export function WorkspacePage() {
                   collapsedSize={0}
                   className="min-h-0"
                 >
-                  <VersionList key={labId} sessionId={sessionId} directory={directory} />
+                  <VersionList
+                    key={labId}
+                    sessionId={sessionId}
+                    directory={directory}
+                  />
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
 
             <ResizableHandle withHandle />
 
-            <ResizablePanel id="ws-center" defaultSize="53%" minSize="25%" className="min-h-0 bg-background">
+            <ResizablePanel
+              id="ws-center"
+              defaultSize="53%"
+              minSize="25%"
+              className="min-h-0 bg-background"
+            >
               <ResizablePanelGroup orientation="vertical" className="h-full">
-                <ResizablePanel id="ws-editor" defaultSize="60%" minSize="20%" className="min-h-0">
+                <ResizablePanel
+                  id="ws-editor"
+                  defaultSize="60%"
+                  minSize="20%"
+                  className="min-h-0"
+                >
                   <WorkspaceEditorShell
                     directory={directory}
                     onOpenPreview={() => togglePanel(previewPanelRef)}
@@ -386,7 +437,11 @@ export function WorkspacePage() {
                   className="min-h-0 border-t border-border bg-muted/30"
                 >
                   <div className="flex h-full flex-col items-center justify-center gap-2 px-8 py-10 text-center font-heading text-sm text-muted-foreground">
-                    <Hi icon={BookOpen01Icon} size={28} className="opacity-40" />
+                    <Hi
+                      icon={BookOpen01Icon}
+                      size={28}
+                      className="opacity-40"
+                    />
                     <p>
                       {activeFile?.endsWith(".typ")
                         ? "Превью"
@@ -426,7 +481,8 @@ export function WorkspacePage() {
           <Sheet
             open={mobileOverlay === "project"}
             onOpenChange={(open) => {
-              if (!open) setMobileOverlay((cur) => (cur === "project" ? null : cur));
+              if (!open)
+                setMobileOverlay((cur) => (cur === "project" ? null : cur));
             }}
           >
             <SheetContent
@@ -445,12 +501,20 @@ export function WorkspacePage() {
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
                 <div className="flex min-h-[36dvh] min-w-0 flex-1 flex-col border-b">
                   <div className="min-h-0 flex-1 overflow-hidden">
-                    <FileTree key={labId} directory={directory} sessionId={sessionId} />
+                    <FileTree
+                      key={labId}
+                      directory={directory}
+                      sessionId={sessionId}
+                    />
                   </div>
                 </div>
                 <div className="flex min-h-[28dvh] min-w-0 flex-1 flex-col overflow-hidden">
                   <div className="min-h-0 flex-1 overflow-hidden">
-                    <VersionList key={labId} sessionId={sessionId} directory={directory} />
+                    <VersionList
+                      key={labId}
+                      sessionId={sessionId}
+                      directory={directory}
+                    />
                   </div>
                 </div>
               </div>
@@ -460,7 +524,8 @@ export function WorkspacePage() {
           <Sheet
             open={mobileOverlay === "preview"}
             onOpenChange={(open) => {
-              if (!open) setMobileOverlay((cur) => (cur === "preview" ? null : cur));
+              if (!open)
+                setMobileOverlay((cur) => (cur === "preview" ? null : cur));
             }}
           >
             <SheetContent
@@ -479,9 +544,7 @@ export function WorkspacePage() {
               <div className="flex min-h-[40dvh] flex-col items-center justify-center gap-2 bg-background px-6 py-12 text-center font-sans text-sm text-muted-foreground">
                 <Hi icon={BookOpen01Icon} size={32} className="opacity-40" />
                 <p>
-                  {activeFile?.endsWith(".typ")
-                    ? "Превью"
-                    : "Вывод / Превью"}
+                  {activeFile?.endsWith(".typ") ? "Превью" : "Вывод / Превью"}
                 </p>
               </div>
             </SheetContent>
@@ -490,7 +553,8 @@ export function WorkspacePage() {
           <Sheet
             open={mobileOverlay === "chat"}
             onOpenChange={(open) => {
-              if (!open) setMobileOverlay((cur) => (cur === "chat" ? null : cur));
+              if (!open)
+                setMobileOverlay((cur) => (cur === "chat" ? null : cur));
             }}
           >
             <SheetContent

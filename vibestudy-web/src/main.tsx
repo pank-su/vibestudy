@@ -19,7 +19,10 @@ const queryClient = new QueryClient({
 const router = createAppRouter(queryClient);
 
 // Auto-reconnect on startup using persisted baseUrl
-void useConnectionStore.getState().tryAutoConnect().catch(() => {});
+void useConnectionStore
+  .getState()
+  .tryAutoConnect()
+  .catch(() => {});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -28,5 +31,5 @@ createRoot(document.getElementById("root")!).render(
         <RouterProvider router={router} />
       </ThemeProvider>
     </QueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

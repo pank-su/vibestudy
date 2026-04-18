@@ -8,7 +8,10 @@ function hslTripletToCssColor(triplet: string): string {
 
 function cssColorToHex(cssColor: string, fallbackHex: string): string {
   if (typeof document === "undefined") return fallbackHex;
-  if (/^#[0-9a-fA-F]{6}$/.test(cssColor) || /^#[0-9a-fA-F]{3}$/.test(cssColor)) {
+  if (
+    /^#[0-9a-fA-F]{6}$/.test(cssColor) ||
+    /^#[0-9a-fA-F]{3}$/.test(cssColor)
+  ) {
     return cssColor.length === 4
       ? `#${cssColor[1]}${cssColor[1]}${cssColor[2]}${cssColor[2]}${cssColor[3]}${cssColor[3]}`
       : cssColor;
@@ -30,7 +33,9 @@ function cssColorToHex(cssColor: string, fallbackHex: string): string {
 
 function hexVar(name: string, fallbackHex: string): string {
   if (typeof document === "undefined") return fallbackHex;
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
   if (!raw) return fallbackHex;
   const css = hslTripletToCssColor(raw);
   return cssColorToHex(css, fallbackHex);
@@ -88,6 +93,8 @@ export function defineVibestudyMonacoThemes(monaco: Monaco) {
   });
 }
 
-export function monacoThemeId(appTheme: "light" | "dark"): "vibestudy-light" | "vibestudy-dark" {
+export function monacoThemeId(
+  appTheme: "light" | "dark",
+): "vibestudy-light" | "vibestudy-dark" {
   return appTheme === "dark" ? "vibestudy-dark" : "vibestudy-light";
 }

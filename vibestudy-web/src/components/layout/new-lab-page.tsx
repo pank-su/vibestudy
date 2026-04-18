@@ -24,7 +24,11 @@ import {
 import { useLabsStore } from "@/stores/labs";
 import { useConnectionStore } from "@/stores/connection";
 import { useProfileStore } from "@/stores/profile";
-import { useLocalSettingsStore, LIGHT_AGENTS, HEAVY_AGENTS } from "@/stores/local-settings";
+import {
+  useLocalSettingsStore,
+  LIGHT_AGENTS,
+  HEAVY_AGENTS,
+} from "@/stores/local-settings";
 import { useCreateSession } from "@/lib/opencode-client";
 import { Hi } from "@/components/ui/hi";
 import { cn } from "@/lib/utils";
@@ -38,7 +42,12 @@ const importOptions: {
   accept?: string;
 }[] = [
   { type: "pdf", icon: Pdf01Icon, label: "PDF методичка", accept: ".pdf" },
-  { type: "folder", icon: FolderUploadIcon, label: "ZIP / Папка", accept: ".zip" },
+  {
+    type: "folder",
+    icon: FolderUploadIcon,
+    label: "ZIP / Папка",
+    accept: ".zip",
+  },
   { type: "github", icon: GitBranchIcon, label: "GitHub" },
   { type: "template", icon: SparklesIcon, label: "С нуля" },
 ];
@@ -46,49 +55,51 @@ const importOptions: {
 const LAB_TEMPLATE_REPO = "https://github.com/pank-suai/lab_template";
 
 function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[а-яё]/g, (c) => {
-      const map: Record<string, string> = {
-        а: "a",
-        б: "b",
-        в: "v",
-        г: "g",
-        д: "d",
-        е: "e",
-        ё: "yo",
-        ж: "zh",
-        з: "z",
-        и: "i",
-        й: "y",
-        к: "k",
-        л: "l",
-        м: "m",
-        н: "n",
-        о: "o",
-        п: "p",
-        р: "r",
-        с: "s",
-        т: "t",
-        у: "u",
-        ф: "f",
-        х: "h",
-        ц: "ts",
-        ч: "ch",
-        ш: "sh",
-        щ: "sch",
-        ъ: "",
-        ы: "y",
-        ь: "",
-        э: "e",
-        ю: "yu",
-        я: "ya",
-      };
-      return map[c] ?? c;
-    })
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "lab";
+  return (
+    name
+      .toLowerCase()
+      .replace(/[а-яё]/g, (c) => {
+        const map: Record<string, string> = {
+          а: "a",
+          б: "b",
+          в: "v",
+          г: "g",
+          д: "d",
+          е: "e",
+          ё: "yo",
+          ж: "zh",
+          з: "z",
+          и: "i",
+          й: "y",
+          к: "k",
+          л: "l",
+          м: "m",
+          н: "n",
+          о: "o",
+          п: "p",
+          р: "r",
+          с: "s",
+          т: "t",
+          у: "u",
+          ф: "f",
+          х: "h",
+          ц: "ts",
+          ч: "ch",
+          ш: "sh",
+          щ: "sch",
+          ъ: "",
+          ы: "y",
+          ь: "",
+          э: "e",
+          ю: "yu",
+          я: "ya",
+        };
+        return map[c] ?? c;
+      })
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "lab"
+  );
 }
 
 function buildSystemPrompt(
@@ -116,8 +127,10 @@ function buildAgentOverrides(
 ): Record<string, { model: string }> {
   const overrides: Record<string, { model: string }> = {};
   if (modelMode === "simple") {
-    if (lightModel) for (const a of LIGHT_AGENTS) overrides[a] = { model: lightModel };
-    if (heavyModel) for (const a of HEAVY_AGENTS) overrides[a] = { model: heavyModel };
+    if (lightModel)
+      for (const a of LIGHT_AGENTS) overrides[a] = { model: lightModel };
+    if (heavyModel)
+      for (const a of HEAVY_AGENTS) overrides[a] = { model: heavyModel };
   } else {
     for (const [agent, model] of Object.entries(agentModels)) {
       if (model) overrides[agent] = { model };
@@ -132,7 +145,8 @@ export function NewLabPage() {
   const updateLab = useLabsStore((s) => s.updateLab);
   const connected = useConnectionStore((s) => s.connection.connected);
   const profile = useProfileStore((s) => s.profile);
-  const { labsDirectory, modelMode, lightModel, heavyModel, agentModels } = useLocalSettingsStore();
+  const { labsDirectory, modelMode, lightModel, heavyModel, agentModels } =
+    useLocalSettingsStore();
 
   const createSession = useCreateSession();
 
@@ -155,7 +169,10 @@ export function NewLabPage() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const attachInputRef = useRef<HTMLInputElement>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, type: ImportType) {
+  function handleFileChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: ImportType,
+  ) {
     const file = e.target.files?.[0];
     if (file) {
       setAttachedFile(file);
@@ -189,7 +206,12 @@ export function NewLabPage() {
       navigate({
         to: "/workspace/$labId",
         params: { labId },
-        search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined },
+        search: {
+          sessionId: undefined,
+          directory: undefined,
+          initialPrompt: undefined,
+          system: undefined,
+        },
       });
       setIsStarting(false);
       return;
@@ -197,10 +219,15 @@ export function NewLabPage() {
 
     try {
       const client = useConnectionStore.getState().connection.client;
-      if (!client) throw new Error("OpenCode клиент не инициализирован — переподключитесь в настройках");
+      if (!client)
+        throw new Error(
+          "OpenCode клиент не инициализирован — переподключитесь в настройках",
+        );
 
       const pathRes = await client.path.get();
-      const pathData = pathRes.data as { home?: string; directory?: string } | undefined;
+      const pathData = pathRes.data as
+        | { home?: string; directory?: string }
+        | undefined;
       const homePath = pathData?.home ?? pathData?.directory ?? "/tmp";
       const rawBase = (labsDirectory || "~/vibestudy").replace(/\/$/, "");
       const absBase = rawBase.startsWith("~/")
@@ -213,14 +240,20 @@ export function NewLabPage() {
       const directory = `${absBase}/${slug}-${shortId}`;
 
       setStartStatus("Создание директории и клонирование шаблона…");
-      const baseUrl = useConnectionStore.getState().connection.baseUrl.replace(/\/$/, "");
+      const baseUrl = useConnectionStore
+        .getState()
+        .connection.baseUrl.replace(/\/$/, "");
 
-      const bsRes = await fetch(`${baseUrl}/session?directory=${encodeURIComponent(homePath)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: `_setup_${shortId}` }),
-      });
-      if (!bsRes.ok) throw new Error(`Не удалось создать bootstrap-сессию: ${bsRes.status}`);
+      const bsRes = await fetch(
+        `${baseUrl}/session?directory=${encodeURIComponent(homePath)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: `_setup_${shortId}` }),
+        },
+      );
+      if (!bsRes.ok)
+        throw new Error(`Не удалось создать bootstrap-сессию: ${bsRes.status}`);
       const bootstrapSession = (await bsRes.json()) as { id: string };
       const bootstrapId = bootstrapSession.id;
 
@@ -233,7 +266,10 @@ export function NewLabPage() {
               `cp -rn "${directory}/_template/docs" "${directory}/_template/.claude" "${directory}/_template/.opencode" "${directory}/_template/opencode.json" "${directory}/" 2>/dev/null || true`,
               `rm -rf "${directory}/_template"`,
             ].join(" && ")
-          : [`mkdir -p "${directory}"`, `git clone "${LAB_TEMPLATE_REPO}" "${directory}"`].join(" && ");
+          : [
+              `mkdir -p "${directory}"`,
+              `git clone "${LAB_TEMPLATE_REPO}" "${directory}"`,
+            ].join(" && ");
 
       try {
         const shellRes = await fetch(
@@ -255,21 +291,37 @@ export function NewLabPage() {
           `Не удалось создать директорию: ${shellErr instanceof Error ? shellErr.message : shellErr}`,
         );
       } finally {
-        fetch(`${baseUrl}/session/${bootstrapId}`, { method: "DELETE" }).catch(() => {});
+        fetch(`${baseUrl}/session/${bootstrapId}`, { method: "DELETE" }).catch(
+          () => {},
+        );
       }
 
       setStartStatus("Открытие рабочей сессии…");
-      const session = await createSession.mutateAsync({ title: labName, directory });
+      const session = await createSession.mutateAsync({
+        title: labName,
+        directory,
+      });
 
-      const overrides = buildAgentOverrides(modelMode, lightModel, heavyModel, agentModels);
+      const overrides = buildAgentOverrides(
+        modelMode,
+        lightModel,
+        heavyModel,
+        agentModels,
+      );
       if (Object.keys(overrides).length > 0) {
         try {
           const cfgRes = await client.config.get({ query: { directory } });
           const currentCfg = (cfgRes.data ?? {}) as Record<string, unknown>;
-          const currentAgents = (currentCfg.agent ?? {}) as Record<string, Record<string, unknown>>;
+          const currentAgents = (currentCfg.agent ?? {}) as Record<
+            string,
+            Record<string, unknown>
+          >;
           const mergedAgents: Record<string, unknown> = { ...currentAgents };
           for (const [name, override] of Object.entries(overrides)) {
-            mergedAgents[name] = { ...(currentAgents[name] ?? {}), ...override };
+            mergedAgents[name] = {
+              ...(currentAgents[name] ?? {}),
+              ...override,
+            };
           }
           await client.config.update({
             body: { ...currentCfg, agent: mergedAgents } as never,
@@ -293,7 +345,11 @@ export function NewLabPage() {
         }
       }
 
-      updateLab(labId, { sessionId: session.id, directory, name: session.title || labName });
+      updateLab(labId, {
+        sessionId: session.id,
+        directory,
+        name: session.title || labName,
+      });
 
       navigate({
         to: "/workspace/$labId",
@@ -331,7 +387,9 @@ export function NewLabPage() {
     <div className="flex h-full flex-col items-center justify-center px-4">
       <div className="w-full max-w-2xl space-y-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Новая лабораторная</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Новая лабораторная
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Опишите задачу, прикрепите методичку или выберите способ импорта
           </p>
@@ -346,7 +404,10 @@ export function NewLabPage() {
                 type="button"
                 variant={active ? "secondary" : "outline"}
                 size="sm"
-                className={cn("gap-2 rounded-full", active && "border-primary/40")}
+                className={cn(
+                  "gap-2 rounded-full",
+                  active && "border-primary/40",
+                )}
                 onClick={() => {
                   if (opt.type === "pdf") {
                     pdfInputRef.current?.click();
@@ -386,7 +447,9 @@ export function NewLabPage() {
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
-              const type: ImportType = file.name.endsWith(".zip") ? "folder" : "pdf";
+              const type: ImportType = file.name.endsWith(".zip")
+                ? "folder"
+                : "pdf";
               handleFileChange(e, type);
             }
           }}
@@ -409,7 +472,11 @@ export function NewLabPage() {
               className="w-full justify-between gap-2 border-b border-border"
             >
               <span className="flex min-w-0 flex-1 items-center gap-2 truncate text-sm">
-                <Hi icon={File01Icon} size={16} className="shrink-0 text-muted-foreground" />
+                <Hi
+                  icon={File01Icon}
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                />
                 {attachedFile.name}
               </span>
               <InputGroupButton
@@ -430,7 +497,10 @@ export function NewLabPage() {
             className="min-h-[100px] px-4 text-sm"
             rows={3}
           />
-          <InputGroupAddon align="block-end" className="flex w-full flex-row justify-between border-t border-border">
+          <InputGroupAddon
+            align="block-end"
+            className="flex w-full flex-row justify-between border-t border-border"
+          >
             <InputGroupButton
               size="icon-sm"
               variant="ghost"

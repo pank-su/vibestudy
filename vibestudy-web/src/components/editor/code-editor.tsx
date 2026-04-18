@@ -1,6 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
-import MonacoEditor, { useMonaco, type BeforeMount } from "@monaco-editor/react";
-import { AlertCircleIcon, Loading03Icon, Tick02Icon, FloppyDiskIcon } from "@hugeicons/core-free-icons";
+import MonacoEditor, {
+  useMonaco,
+  type BeforeMount,
+} from "@monaco-editor/react";
+import {
+  AlertCircleIcon,
+  Loading03Icon,
+  Tick02Icon,
+  FloppyDiskIcon,
+} from "@hugeicons/core-free-icons";
 import { Hi } from "@/components/ui/hi";
 import { Button } from "@/components/ui/button";
 import { useFileContent, qk } from "@/lib/opencode-client";
@@ -13,16 +21,24 @@ import { defineVibestudyMonacoThemes, monacoThemeId } from "@/lib/monaco-theme";
 
 function detectLanguage(path: string): string {
   const lower = path.toLowerCase();
-  if (lower.endsWith("makefile") || lower.endsWith("gnumakefile")) return "makefile";
-  if (lower.endsWith("dockerfile"))   return "dockerfile";
+  if (lower.endsWith("makefile") || lower.endsWith("gnumakefile"))
+    return "makefile";
+  if (lower.endsWith("dockerfile")) return "dockerfile";
   if (lower.endsWith("cmakelists.txt")) return "cmake";
 
   const ext = path.split(".").pop()?.toLowerCase() ?? "";
   const map: Record<string, string> = {
-    ts: "typescript", tsx: "typescript",
-    js: "javascript", jsx: "javascript",
+    ts: "typescript",
+    tsx: "typescript",
+    js: "javascript",
+    jsx: "javascript",
     py: "python",
-    cpp: "cpp", cc: "cpp", cxx: "cpp", c: "c", h: "c", hpp: "cpp",
+    cpp: "cpp",
+    cc: "cpp",
+    cxx: "cpp",
+    c: "c",
+    h: "c",
+    hpp: "cpp",
     rs: "rust",
     go: "go",
     java: "java",
@@ -31,12 +47,14 @@ function detectLanguage(path: string): string {
     php: "php",
     swift: "swift",
     kt: "kotlin",
-    sh: "shell", bash: "shell",
+    sh: "shell",
+    bash: "shell",
     json: "json",
-    yaml: "yaml", yml: "yaml",
+    yaml: "yaml",
+    yml: "yaml",
     toml: "ini",
     md: "markdown",
-    typ: "markdown",   // Typst — no dedicated lang
+    typ: "markdown", // Typst — no dedicated lang
     html: "html",
     css: "css",
     scss: "scss",
@@ -61,13 +79,16 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
   const baseUrl = useConnectionStore((s) => s.connection.baseUrl);
   const qc = useQueryClient();
 
-  const { data: remoteContent, isLoading } = useFileContent(directory, filePath);
+  const { data: remoteContent, isLoading } = useFileContent(
+    directory,
+    filePath,
+  );
 
   const [localContent, setLocalContent] = useState<string>("");
   const [savedContent, setSavedContent] = useState<string>("");
-  const [isSaving,     setIsSaving]     = useState(false);
-  const [justSaved,    setJustSaved]    = useState(false);
-  const [saveError,    setSaveError]    = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Reset when file changes or remote content loads
   useEffect(() => {
@@ -100,7 +121,11 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
       const res = await fetch(`${baseUrl}/file/content`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ directory, path: filePath, content: localContent }),
+        body: JSON.stringify({
+          directory,
+          path: filePath,
+          content: localContent,
+        }),
       });
 
       if (!res.ok) {
@@ -150,9 +175,14 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
     <div className="flex h-full flex-col bg-background">
       <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border bg-muted px-4">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate font-mono text-xs text-muted-foreground">{fileName}</span>
+          <span className="truncate font-mono text-xs text-muted-foreground">
+            {fileName}
+          </span>
           {isDirty && !saveError && (
-            <span className="size-1.5 shrink-0 rounded-full bg-amber-500" title="Несохранённые изменения" />
+            <span
+              className="size-1.5 shrink-0 rounded-full bg-amber-500"
+              title="Несохранённые изменения"
+            />
           )}
           {saveError && (
             <span className="flex items-center gap-1 font-sans text-xs text-destructive">
@@ -162,7 +192,8 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
           )}
         </div>
         <Button
-          variant="ghost" size="sm"
+          variant="ghost"
+          size="sm"
           className="h-7 shrink-0 gap-1.5 px-2 font-sans text-xs text-foreground hover:bg-background"
           onClick={handleSave}
           disabled={!isDirty || isSaving}

@@ -74,12 +74,15 @@ interface ChatPanelProps {
   surface?: "default" | "overlay";
 }
 
-function labCwdSystemHint(directory: string | undefined, base?: string): string | undefined {
+function labCwdSystemHint(
+  directory: string | undefined,
+  base?: string,
+): string | undefined {
   const parts: string[] = [];
   if (directory) {
     parts.push(
       `[VibeStudy] Рабочая директория этой лабораторной на машине пользователя:\n${directory}\n` +
-        "Используй её как корень проекта для обзора файлов и инструментов. Не путай с кодом веб-приложения VibeStudy."
+        "Используй её как корень проекта для обзора файлов и инструментов. Не путай с кодом веб-приложения VibeStudy.",
     );
   }
   if (base?.trim()) parts.push(base.trim());
@@ -97,24 +100,25 @@ function firstMentionAgent(text: string): string | undefined {
 function ToolCard({ bubble }: { bubble: ToolBubble }) {
   const [expanded, setExpanded] = useState(false);
   const statusColor = {
-    pending:   "text-muted-foreground",
-    running:   "text-primary",
+    pending: "text-muted-foreground",
+    running: "text-primary",
     completed: "text-emerald-700 dark:text-emerald-400",
-    error:     "text-destructive",
+    error: "text-destructive",
   }[bubble.status];
 
   const statusLabel = {
-    pending:   "Ожидание",
-    running:   "Выполняется",
+    pending: "Ожидание",
+    running: "Выполняется",
     completed: "Готово",
-    error:     "Ошибка",
+    error: "Ошибка",
   }[bubble.status];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-background text-xs shadow-xs">
       {bubble.agent && (
         <div className="border-b border-border bg-muted px-3 py-1.5 font-sans text-[10px] font-medium text-muted-foreground">
-          Агент: <span className="font-mono text-foreground">@{bubble.agent}</span>
+          Агент:{" "}
+          <span className="font-mono text-foreground">@{bubble.agent}</span>
         </div>
       )}
       <button
@@ -123,13 +127,19 @@ function ToolCard({ bubble }: { bubble: ToolBubble }) {
         className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted"
       >
         <Hi icon={Wrench01Icon} size={16} className="text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate font-mono font-medium text-foreground">{bubble.tool}</span>
+        <span className="min-w-0 flex-1 truncate font-mono font-medium text-foreground">
+          {bubble.tool}
+        </span>
         {bubble.status === "running" && (
           <span className="inline-flex shrink-0 animate-spin text-primary">
             <Hi icon={Loading03Icon} size={14} />
           </span>
         )}
-        <span className={`shrink-0 font-sans text-[11px] font-medium ${statusColor}`}>{statusLabel}</span>
+        <span
+          className={`shrink-0 font-sans text-[11px] font-medium ${statusColor}`}
+        >
+          {statusLabel}
+        </span>
         <Hi
           icon={ArrowDown01Icon}
           size={14}
@@ -180,15 +190,19 @@ function MessageBubble({ bubble }: { bubble: Bubble }) {
   const userMention = isUser ? firstMentionAgent(bubble.text) : undefined;
 
   return (
-    <div className={`flex items-end gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`flex items-end gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
+    >
       <div
         className={`flex size-8 shrink-0 items-center justify-center rounded-[10px] ${
-          isUser
-            ? "bg-muted text-foreground"
-            : "bg-muted text-foreground"
+          isUser ? "bg-muted text-foreground" : "bg-muted text-foreground"
         }`}
       >
-        {isUser ? <Hi icon={UserIcon} size={16} /> : <Hi icon={SparklesIcon} size={16} />}
+        {isUser ? (
+          <Hi icon={UserIcon} size={16} />
+        ) : (
+          <Hi icon={SparklesIcon} size={16} />
+        )}
       </div>
       <div
         className={`max-w-[min(100%,min(320px,88vw))] rounded-2xl border px-3.5 py-2.5 font-sans shadow-xs sm:max-w-[min(100%,248px)] ${
@@ -211,15 +225,25 @@ function MessageBubble({ bubble }: { bubble: Bubble }) {
             </span>
           </div>
         )}
-        {bubble.text
-          ? isUser
-            ? <ChatMarkdown text={bubble.text} variant="workspace" role="user" />
-            : <ChatMarkdown text={bubble.text} variant="workspace" role="assistant" />
-          : (
-            <span className="inline-flex animate-spin opacity-50">
-              <Hi icon={Loading03Icon} size={18} className="text-muted-foreground" />
-            </span>
-          )}
+        {bubble.text ? (
+          isUser ? (
+            <ChatMarkdown text={bubble.text} variant="workspace" role="user" />
+          ) : (
+            <ChatMarkdown
+              text={bubble.text}
+              variant="workspace"
+              role="assistant"
+            />
+          )
+        ) : (
+          <span className="inline-flex animate-spin opacity-50">
+            <Hi
+              icon={Loading03Icon}
+              size={18}
+              className="text-muted-foreground"
+            />
+          </span>
+        )}
       </div>
     </div>
   );
@@ -274,60 +298,77 @@ export function ChatPanel({
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
-  const upsertTextBubble = useCallback((messageId: string, delta: string, agent?: string) => {
-    setBubbles((prev) => {
-      const idx = prev.findIndex(
-        (b) => b.kind === "text" && b.messageId === messageId && b.role === "assistant"
-      );
-      if (idx === -1) {
-        const newBubble: TextBubble = {
-          id: messageId,
-          kind: "text",
-          role: "assistant",
-          messageId,
-          text: delta,
-          agent,
-        };
-        return [...prev, newBubble];
-      }
-      const updated = [...prev];
-      const b = updated[idx] as TextBubble;
-      updated[idx] = { ...b, text: b.text + delta, agent: agent ?? b.agent };
-      return updated;
-    });
-  }, []);
+  const upsertTextBubble = useCallback(
+    (messageId: string, delta: string, agent?: string) => {
+      setBubbles((prev) => {
+        const idx = prev.findIndex(
+          (b) =>
+            b.kind === "text" &&
+            b.messageId === messageId &&
+            b.role === "assistant",
+        );
+        if (idx === -1) {
+          const newBubble: TextBubble = {
+            id: messageId,
+            kind: "text",
+            role: "assistant",
+            messageId,
+            text: delta,
+            agent,
+          };
+          return [...prev, newBubble];
+        }
+        const updated = [...prev];
+        const b = updated[idx] as TextBubble;
+        updated[idx] = { ...b, text: b.text + delta, agent: agent ?? b.agent };
+        return updated;
+      });
+    },
+    [],
+  );
 
-  const upsertToolBubble = useCallback((
-    partId: string,
-    messageId: string,
-    tool: string,
-    status: ToolBubble["status"],
-    title?: string,
-    input?: Record<string, unknown>,
-    output?: string,
-    agent?: string,
-  ) => {
-    setBubbles((prev) => {
-      const idx = prev.findIndex((b) => b.kind === "tool" && b.id === partId);
-      if (idx === -1) {
-        const newBubble: ToolBubble = {
-          id: partId, kind: "tool", messageId, tool, agent, status, title, input, output,
+  const upsertToolBubble = useCallback(
+    (
+      partId: string,
+      messageId: string,
+      tool: string,
+      status: ToolBubble["status"],
+      title?: string,
+      input?: Record<string, unknown>,
+      output?: string,
+      agent?: string,
+    ) => {
+      setBubbles((prev) => {
+        const idx = prev.findIndex((b) => b.kind === "tool" && b.id === partId);
+        if (idx === -1) {
+          const newBubble: ToolBubble = {
+            id: partId,
+            kind: "tool",
+            messageId,
+            tool,
+            agent,
+            status,
+            title,
+            input,
+            output,
+          };
+          return [...prev, newBubble];
+        }
+        const updated = [...prev];
+        const cur = updated[idx] as ToolBubble;
+        updated[idx] = {
+          ...cur,
+          status,
+          title: title ?? cur.title,
+          input: input ?? cur.input,
+          output: output ?? cur.output,
+          agent: agent ?? cur.agent,
         };
-        return [...prev, newBubble];
-      }
-      const updated = [...prev];
-      const cur = updated[idx] as ToolBubble;
-      updated[idx] = {
-        ...cur,
-        status,
-        title: title ?? cur.title,
-        input: input ?? cur.input,
-        output: output ?? cur.output,
-        agent: agent ?? cur.agent,
-      };
-      return updated;
-    });
-  }, []);
+        return updated;
+      });
+    },
+    [],
+  );
 
   // ── SSE subscription ─────────────────────────────────────────────────────
 
@@ -335,7 +376,9 @@ export function ChatPanel({
     if (!sessionId || !connected) return;
     const sid = sessionId;
 
-    function roleForMessage(messageId: string): "user" | "assistant" | undefined {
+    function roleForMessage(
+      messageId: string,
+    ): "user" | "assistant" | undefined {
       const fromRef = messageRolesRef.current.get(messageId);
       if (fromRef) return fromRef;
       const dir = directory ?? "";
@@ -369,18 +412,23 @@ export function ChatPanel({
         }
         if (!props) return;
 
-        const evSessionId = (props.sessionID ?? props.sessionId) as string | undefined;
+        const evSessionId = (props.sessionID ?? props.sessionId) as
+          | string
+          | undefined;
         if (evSessionId && evSessionId !== sessionId) return;
 
         if (type === "message.updated") {
-          const info = props.info as {
-            id?: string;
-            role?: string;
-            sessionID?: string;
-            sessionId?: string;
-          } | undefined;
-          const msgSession =
-            (info?.sessionID ?? info?.sessionId ?? evSessionId) as string | undefined;
+          const info = props.info as
+            | {
+                id?: string;
+                role?: string;
+                sessionID?: string;
+                sessionId?: string;
+              }
+            | undefined;
+          const msgSession = (info?.sessionID ??
+            info?.sessionId ??
+            evSessionId) as string | undefined;
           if (msgSession && msgSession !== sessionId) return;
           if (info?.id && (info.role === "user" || info.role === "assistant")) {
             messageRolesRef.current.set(info.id, info.role);
@@ -396,7 +444,9 @@ export function ChatPanel({
 
         if (type === "message.part.updated") {
           const part = props.part as Record<string, unknown>;
-          const partSession = (part.sessionID ?? part.sessionId) as string | undefined;
+          const partSession = (part.sessionID ?? part.sessionId) as
+            | string
+            | undefined;
           if (partSession && partSession !== sessionId) return;
           const partType = part.type as string;
           const messageId = part.messageID as string;
@@ -419,11 +469,21 @@ export function ChatPanel({
           } else if (partType === "tool") {
             const state = part.state as Record<string, unknown>;
             const status = (state?.status as ToolBubble["status"]) ?? "pending";
-            const title = (state?.title as string | undefined) ?? (part.tool as string);
+            const title =
+              (state?.title as string | undefined) ?? (part.tool as string);
             const input = state?.input as Record<string, unknown> | undefined;
             const output = state?.output as string | undefined;
             const meta = part.metadata as { agent?: string } | undefined;
-            upsertToolBubble(partId, messageId, part.tool as string, status, title, input, output, meta?.agent);
+            upsertToolBubble(
+              partId,
+              messageId,
+              part.tool as string,
+              status,
+              title,
+              input,
+              output,
+              meta?.agent,
+            );
           } else if (partType === "agent") {
             const name = part.name as string | undefined;
             if (name) setActiveAgentLabel(name);
@@ -437,16 +497,18 @@ export function ChatPanel({
             setIsBusy(false);
             setActiveAgentLabel(null);
             qc.invalidateQueries({ queryKey: ["messages", sessionId] });
-            if (directory) qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
+            if (directory)
+              qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
           }
         } else if (type === "session.idle") {
           setIsBusy(false);
           setActiveAgentLabel(null);
           qc.invalidateQueries({ queryKey: ["messages", sessionId] });
-          if (directory) qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
+          if (directory)
+            qc.invalidateQueries({ queryKey: qk.files(directory, ".") });
         }
       },
-      undefined
+      undefined,
     );
 
     cleanupRef.current = cleanup;
@@ -479,9 +541,9 @@ export function ChatPanel({
         system: labCwdSystemHint(directory, systemPrompt),
         directory,
       },
-      { onError: () => setIsBusy(false) }
+      { onError: () => setIsBusy(false) },
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, initialPrompt, directory]);
 
   // ── send user message ────────────────────────────────────────────────────
@@ -509,7 +571,7 @@ export function ChatPanel({
         directory,
         system: labCwdSystemHint(directory),
       },
-      { onError: () => setIsBusy(false) }
+      { onError: () => setIsBusy(false) },
     );
   }
 
@@ -585,8 +647,14 @@ export function ChatPanel({
         <div className="flex flex-col gap-3 px-2.5 py-3 sm:gap-3.5 sm:px-3.5 sm:py-4">
           {bubbles.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Hi icon={SparklesIcon} size={40} className="mb-3 text-muted-foreground opacity-40" />
-              <p className="font-sans text-sm font-medium text-foreground">OpenCode</p>
+              <Hi
+                icon={SparklesIcon}
+                size={40}
+                className="mb-3 text-muted-foreground opacity-40"
+              />
+              <p className="font-sans text-sm font-medium text-foreground">
+                OpenCode
+              </p>
               <p className="mt-1 max-w-[160px] font-sans text-xs text-muted-foreground">
                 {sessionId
                   ? "Отправьте сообщение или методичку"
@@ -670,7 +738,8 @@ export function ChatPanel({
         )}
         {sessionId && !directory && (
           <p className="mt-2 text-center font-sans text-[11px] text-amber-700/90 dark:text-amber-400/90">
-            Нет директории лабы — запросы идут без привязки к проекту. Создайте лабу заново или откройте из списка.
+            Нет директории лабы — запросы идут без привязки к проекту. Создайте
+            лабу заново или откройте из списка.
           </p>
         )}
       </div>

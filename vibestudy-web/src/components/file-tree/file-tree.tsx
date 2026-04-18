@@ -41,14 +41,56 @@ interface TreeNode {
 }
 
 const MOCK_FILES: SDKFileEntry[] = [
-  { name: "src",           path: "src",            absolute: "", type: "directory", ignored: false },
-  { name: "main.cpp",      path: "src/main.cpp",   absolute: "", type: "file",      ignored: false },
-  { name: "utils.hpp",     path: "src/utils.hpp",  absolute: "", type: "file",      ignored: false },
-  { name: "docs",          path: "docs",           absolute: "", type: "directory", ignored: false },
-  { name: "index.typ",     path: "docs/index.typ", absolute: "", type: "file",      ignored: false },
-  { name: "TASK.md",       path: "TASK.md",        absolute: "", type: "file",      ignored: false },
-  { name: "Makefile",      path: "Makefile",       absolute: "", type: "file",      ignored: false },
-  { name: "opencode.json", path: "opencode.json",  absolute: "", type: "file",      ignored: false },
+  { name: "src", path: "src", absolute: "", type: "directory", ignored: false },
+  {
+    name: "main.cpp",
+    path: "src/main.cpp",
+    absolute: "",
+    type: "file",
+    ignored: false,
+  },
+  {
+    name: "utils.hpp",
+    path: "src/utils.hpp",
+    absolute: "",
+    type: "file",
+    ignored: false,
+  },
+  {
+    name: "docs",
+    path: "docs",
+    absolute: "",
+    type: "directory",
+    ignored: false,
+  },
+  {
+    name: "index.typ",
+    path: "docs/index.typ",
+    absolute: "",
+    type: "file",
+    ignored: false,
+  },
+  {
+    name: "TASK.md",
+    path: "TASK.md",
+    absolute: "",
+    type: "file",
+    ignored: false,
+  },
+  {
+    name: "Makefile",
+    path: "Makefile",
+    absolute: "",
+    type: "file",
+    ignored: false,
+  },
+  {
+    name: "opencode.json",
+    path: "opencode.json",
+    absolute: "",
+    type: "file",
+    ignored: false,
+  },
 ];
 
 function normalizeSeparators(p: string): string {
@@ -62,7 +104,10 @@ function isDotfilePath(path: string): boolean {
     .some((seg) => seg.startsWith("."));
 }
 
-function normalizeListingPaths(listPath: string, entries: SDKFileEntry[]): SDKFileEntry[] {
+function normalizeListingPaths(
+  listPath: string,
+  entries: SDKFileEntry[],
+): SDKFileEntry[] {
   const lp = listPath === "." ? "" : normalizeSeparators(listPath);
   return entries.map((e) => {
     const ep = normalizeSeparators(e.path);
@@ -84,10 +129,12 @@ function sortTreeRecursive(nodes: TreeNode[]): void {
 }
 
 function buildTree(nodes: SDKFileEntry[]): TreeNode[] {
-  const visible = nodes.filter((f) => !f.ignored && !isDotfilePath(f.path)).map((n) => ({
-    ...n,
-    path: normalizeSeparators(n.path),
-  }));
+  const visible = nodes
+    .filter((f) => !f.ignored && !isDotfilePath(f.path))
+    .map((n) => ({
+      ...n,
+      path: normalizeSeparators(n.path),
+    }));
   const byPath = new Map<string, SDKFileEntry>();
 
   for (const n of visible) {
@@ -123,7 +170,12 @@ function buildTree(nodes: SDKFileEntry[]): TreeNode[] {
   const map = new Map<string, TreeNode>();
 
   for (const node of enriched) {
-    const treeNode: TreeNode = { name: node.name, path: node.path, type: node.type, children: [] };
+    const treeNode: TreeNode = {
+      name: node.name,
+      path: node.path,
+      type: node.type,
+      children: [],
+    };
     map.set(node.path, treeNode);
 
     const parts = node.path.split("/").filter(Boolean);
@@ -144,7 +196,10 @@ function buildTree(nodes: SDKFileEntry[]): TreeNode[] {
 const RegisterFolderContext = createContext<(path: string) => void>(() => {});
 
 function TreeNodeItem({
-  node, depth, activeFile, onSelectFile,
+  node,
+  depth,
+  activeFile,
+  onSelectFile,
 }: {
   node: TreeNode;
   depth: number;
@@ -153,7 +208,7 @@ function TreeNodeItem({
 }) {
   const registerExpanded = useContext(RegisterFolderContext);
   const [open, setOpen] = useState(depth < 2);
-  const isDir    = node.type === "directory";
+  const isDir = node.type === "directory";
   const isActive = activeFile === node.path;
 
   useEffect(() => {
@@ -180,14 +235,34 @@ function TreeNodeItem({
         {isDir ? (
           <>
             {open ? (
-              <Hi icon={ArrowDown01Icon} size={16} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+              <Hi
+                icon={ArrowDown01Icon}
+                size={16}
+                className={
+                  isActive ? "text-accent-foreground" : "text-muted-foreground"
+                }
+              />
             ) : (
-              <Hi icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
+              <Hi
+                icon={ArrowRight01Icon}
+                size={16}
+                className="text-muted-foreground"
+              />
             )}
             {open ? (
-              <Hi icon={FolderOpenIcon} size={18} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+              <Hi
+                icon={FolderOpenIcon}
+                size={18}
+                className={
+                  isActive ? "text-accent-foreground" : "text-muted-foreground"
+                }
+              />
             ) : (
-              <Hi icon={Folder01Icon} size={18} className="text-muted-foreground" />
+              <Hi
+                icon={Folder01Icon}
+                size={18}
+                className="text-muted-foreground"
+              />
             )}
           </>
         ) : (
@@ -199,12 +274,17 @@ function TreeNodeItem({
         <span className="min-w-0 truncate">{node.name}</span>
       </button>
 
-      {isDir && open && node.children.map((child) => (
-        <TreeNodeItem
-          key={child.path} node={child} depth={depth + 1}
-          activeFile={activeFile} onSelectFile={onSelectFile}
-        />
-      ))}
+      {isDir &&
+        open &&
+        node.children.map((child) => (
+          <TreeNodeItem
+            key={child.path}
+            node={child}
+            depth={depth + 1}
+            activeFile={activeFile}
+            onSelectFile={onSelectFile}
+          />
+        ))}
     </div>
   );
 }
@@ -214,10 +294,15 @@ export function FileTree({ directory, sessionId }: FileTreeProps) {
   const { activeFile, openEditorFile } = useWorkspaceStore();
   const qc = useQueryClient();
 
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set());
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
+    () => new Set(),
+  );
   const autoExpandedForDir = useRef<string | null>(null);
 
-  const { data: rootFiles, isLoading: rootLoading } = useFileList(directory ?? "", ".");
+  const { data: rootFiles, isLoading: rootLoading } = useFileList(
+    directory ?? "",
+    ".",
+  );
 
   useEffect(() => {
     setExpandedPaths(new Set());
@@ -279,25 +364,25 @@ export function FileTree({ directory, sessionId }: FileTreeProps) {
 
   useEffect(() => {
     if (!directory || !connected) return;
-    const cleanup = subscribeEvents(
-      null,
-      (ev) => {
-        const event = ev as Record<string, unknown>;
-        if (event.type === "file.edited") {
-          qc.invalidateQueries({ queryKey: ["files", directory] });
-          if (activeFile) {
-            qc.invalidateQueries({ queryKey: qk.fileContent(directory, activeFile) });
-          }
+    const cleanup = subscribeEvents(null, (ev) => {
+      const event = ev as Record<string, unknown>;
+      if (event.type === "file.edited") {
+        qc.invalidateQueries({ queryKey: ["files", directory] });
+        if (activeFile) {
+          qc.invalidateQueries({
+            queryKey: qk.fileContent(directory, activeFile),
+          });
         }
       }
-    );
+    });
     return cleanup;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [directory, sessionId, connected]);
 
-  const files = connected && directory && rootFiles
-    ? buildTree(allFlat)
-    : buildTree(MOCK_FILES);
+  const files =
+    connected && directory && rootFiles
+      ? buildTree(allFlat)
+      : buildTree(MOCK_FILES);
 
   return (
     <RegisterFolderContext.Provider value={registerExpanded}>
@@ -321,8 +406,11 @@ export function FileTree({ directory, sessionId }: FileTreeProps) {
             )}
             {files.map((node) => (
               <TreeNodeItem
-                key={node.path} node={node} depth={0}
-                activeFile={activeFile} onSelectFile={openEditorFile}
+                key={node.path}
+                node={node}
+                depth={0}
+                activeFile={activeFile}
+                onSelectFile={openEditorFile}
               />
             ))}
           </div>
