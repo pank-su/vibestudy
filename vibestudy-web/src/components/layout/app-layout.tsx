@@ -1,33 +1,65 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useRouter, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { SETTINGS_TAB_ITEMS, parseSettingsTab, type SettingsTabId } from "@/components/layout/settings-nav";
+import { cn } from "@/lib/utils";
 import {
-  Settings,
-  Sun,
-  Moon,
-  Wifi,
-  WifiOff,
-  Plus,
-  FlaskConical,
-  ChevronLeft,
-  ChevronRight,
-  Trash2,
-  Pencil,
-  FolderOpen,
-  AlertTriangle,
-} from "lucide-react";
+  Add01Icon,
+  ArrowLeft01Icon,
+  Delete02Icon,
+  Edit02Icon,
+  FolderOpenIcon,
+  Moon01Icon,
+  Settings01Icon,
+  Sun01Icon,
+  Wifi01Icon,
+  WifiDisconnected01Icon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { useConnectionStore } from "@/stores/connection";
 import { useLabsStore, type Lab } from "@/stores/labs";
 import { useTheme } from "@/hooks/use-theme";
-
-const PANEL_WIDTH = 240;
+import { OpenCodeConnectionGate } from "@/components/layout/opencode-connection-gate";
+import { Hi } from "@/components/ui/hi";
 
 function formatRelativeDate(date: Date): string {
   const diff = Date.now() - date.getTime();
@@ -38,30 +70,35 @@ function formatRelativeDate(date: Date): string {
   return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
 
-function LabItem({
+function LabRow({
   lab,
   isActive,
-  onClick,
+  onOpen,
   onDelete,
   onRename,
 }: {
   lab: Lab;
   isActive: boolean;
-  onClick: () => void;
-  onDelete: (e: React.MouseEvent) => void;
+  onOpen: () => void;
+  onDelete: () => void;
   onRename: (newName: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft]     = useState(lab.name);
+  const [draft, setDraft] = useState(lab.name);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setDraft(lab.name); }, [lab.name]);
+  useEffect(() => {
+    setDraft(lab.name);
+  }, [lab.name]);
 
-  function startEdit(e: React.MouseEvent) {
-    e.stopPropagation();
+  function startEdit(e?: React.MouseEvent) {
+    e?.stopPropagation();
+    e?.preventDefault();
     setDraft(lab.name);
     setEditing(true);
-    setTimeout(() => { inputRef.current?.select(); }, 0);
+    setTimeout(() => {
+      inputRef.current?.select();
+    }, 0);
   }
 
   function commitEdit() {
@@ -71,332 +108,440 @@ function LabItem({
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter")  { e.preventDefault(); commitEdit(); }
-    if (e.key === "Escape") { setEditing(false); setDraft(lab.name); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitEdit();
+    }
+    if (e.key === "Escape") {
+      setEditing(false);
+      setDraft(lab.name);
+    }
   }
 
-  // Shorten directory for display: show only last 2 segments
-  const shortDir = lab.directory
-    ? lab.directory.split("/").slice(-2).join("/")
-    : null;
+  const shortDir = lab.directory ? lab.directory.split("/").slice(-2).join("/") : null;
+
+  if (editing) {
+    return (
+      <Item variant="outline">
+        <ItemContent className="min-w-0">
+          <Input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={handleKeyDown}
+          />
+        </ItemContent>
+      </Item>
+    );
+  }
 
   return (
-    <div
-      className={`group relative w-full rounded-md px-3 py-2 text-left transition-colors cursor-pointer ${
-        isActive
-          ? "bg-accent text-accent-foreground"
-          : "hover:bg-accent/60 text-foreground"
-      }`}
-      onClick={editing ? undefined : onClick}
+    <Item
+      variant={isActive ? "muted" : "default"}
+      role="button"
+      tabIndex={0}
+      className="cursor-pointer border-transparent"
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("[data-slot=item-actions]")) return;
+        onOpen();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
     >
-      <div className="flex items-start gap-2">
-        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1 pr-6">
-          {editing ? (
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={handleKeyDown}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full rounded border border-primary bg-background px-1 py-0 text-[13px] font-medium outline-none ring-1 ring-primary"
-            />
-          ) : (
-            <p className="truncate text-[13px] font-medium leading-snug">{lab.name}</p>
+      <ItemContent className="min-w-0">
+        <ItemTitle className="w-full max-w-full text-[13px] text-sidebar-foreground">{lab.name}</ItemTitle>
+        <ItemDescription className="!line-clamp-none flex flex-wrap items-center gap-1 text-[11px] text-sidebar-foreground/60">
+          <span>{formatRelativeDate(lab.updatedAt)}</span>
+          {shortDir && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex max-w-[100px] cursor-default items-center gap-0.5 truncate">
+                  <Hi icon={FolderOpenIcon} size={10} className="shrink-0" />
+                  <span className="truncate">{shortDir}</span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs break-all font-mono text-xs">
+                {lab.directory}
+              </TooltipContent>
+            </Tooltip>
           )}
-          <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-            <span>{formatRelativeDate(lab.updatedAt)}</span>
-            {lab.status === "in_progress" && (
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
-            )}
-            {shortDir && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex items-center gap-0.5 cursor-default truncate max-w-[100px]">
-                    <FolderOpen className="h-2.5 w-2.5 shrink-0" />
-                    <span className="truncate">{shortDir}</span>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-mono text-xs max-w-xs break-all">
-                  {lab.directory}
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Action buttons — shown on hover */}
-      {!editing && (
-        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 hidden items-center gap-0.5 group-hover:flex">
-          <button
-            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-            onClick={startEdit}
-            title="Переименовать"
-          >
-            <Pencil className="h-2.5 w-2.5" />
-          </button>
-          <button
-            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            onClick={onDelete}
-            title="Удалить"
-          >
-            <Trash2 className="h-2.5 w-2.5" />
-          </button>
-        </div>
-      )}
-    </div>
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions className="shrink-0 opacity-100 md:opacity-0 md:transition-opacity md:group-hover/item:opacity-100">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          title="Переименовать"
+          onClick={(e) => {
+            e.stopPropagation();
+            startEdit(e);
+          }}
+        >
+          <Hi icon={Edit02Icon} size={12} />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7 text-sidebar-foreground hover:bg-destructive/15 hover:text-destructive"
+          title="Удалить"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          <Hi icon={Delete02Icon} size={12} />
+        </Button>
+      </ItemActions>
+    </Item>
   );
 }
 
-/** Confirmation dialog for lab deletion */
-function DeleteLabDialog({
-  lab,
-  onConfirm,
-  onCancel,
-}: {
-  lab: Lab;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
+function SettingsSidebarHeader() {
+  const navigate = useNavigate();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  function goBack() {
+    navigate({ to: "/new" });
+    if (isMobile) setOpenMobile(false);
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-[360px] rounded-xl border bg-background p-5 shadow-xl">
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold">Удалить лабораторную?</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{lab.name}</span> будет удалена из списка.
-              Файлы на диске останутся.
-            </p>
-            {lab.directory && (
-              <div className="mt-2 flex items-center gap-1.5 rounded-md border bg-muted/40 px-2.5 py-1.5">
-                <FolderOpen className="h-3 w-3 shrink-0 text-muted-foreground" />
-                <span className="font-mono text-[11px] text-muted-foreground truncate" title={lab.directory}>
-                  {lab.directory}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onCancel}>
-            Отмена
-          </Button>
-          <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={onConfirm}>
-            Удалить
-          </Button>
-        </div>
+    <SidebarHeader className="border-b">
+      <div className="flex items-center gap-2 px-1 py-0.5">
+        <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={goBack}>
+          <Hi icon={ArrowLeft01Icon} size={16} />
+        </Button>
+        <span className="min-w-0 truncate text-sm font-semibold">Настройки</span>
       </div>
-    </div>
+    </SidebarHeader>
+  );
+}
+
+function SettingsSidebarTabs({ activeTab }: { activeTab: SettingsTabId }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent className="px-1.5 pt-2">
+        <ItemGroup className="gap-1" role="list">
+          {SETTINGS_TAB_ITEMS.map(({ id, label, icon }) => (
+            <Link
+              key={id}
+              to="/settings"
+              search={{ tab: id }}
+              onClick={() => {
+                if (isMobile) setOpenMobile(false);
+              }}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                activeTab === id
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <Hi icon={icon} size={16} className="shrink-0 text-sidebar-foreground/70" />
+              {label}
+            </Link>
+          ))}
+        </ItemGroup>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  const location = useLocation();
   const navigate = useNavigate();
-  const path = router.state.location.pathname;
+  const path = location.pathname;
+  const isSettings = path === "/settings";
+  const settingsTab: SettingsTabId | null = isSettings
+    ? parseSettingsTab((location.search as { tab?: unknown }).tab)
+    : null;
   const currentLabId = path.startsWith("/workspace/") ? path.split("/workspace/")[1] : null;
 
   const { connected } = useConnectionStore((s) => s.connection);
   const { theme, toggleTheme } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
 
-  const labs      = useLabsStore((s) => s.labs);
+  const labs = useLabsStore((s) => s.labs);
   const removeLab = useLabsStore((s) => s.removeLab);
   const updateLab = useLabsStore((s) => s.updateLab);
 
   const [pendingDelete, setPendingDelete] = useState<Lab | null>(null);
 
   const inProgress = labs.filter((l) => l.status === "in_progress");
-  const completed  = labs.filter((l) => l.status === "completed");
+  const completed = labs.filter((l) => l.status === "completed");
+
+  function openLab(lab: Lab) {
+    navigate({
+      to: "/workspace/$labId",
+      params: { labId: lab.id },
+      search: {
+        sessionId: lab.sessionId,
+        directory: lab.directory,
+        initialPrompt: undefined,
+        system: undefined,
+      },
+    });
+  }
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen w-screen overflow-hidden">
-
-        {/* Left sidebar: labs list */}
-        <aside
-          className="relative flex shrink-0 flex-col border-r bg-sidebar-background transition-all duration-200"
-          style={{ width: collapsed ? 0 : PANEL_WIDTH }}
-        >
-          {!collapsed && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              {/* Header */}
-              <div className="flex h-11 shrink-0 items-center justify-between border-b px-3">
-                <Link to="/new">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold select-none">
-                      V
-                    </div>
-                    <span className="text-sm font-semibold">VibeStudy</span>
+      <SidebarProvider
+        className="h-svh min-h-0 w-full [--sidebar-width:15rem]"
+        style={{ "--sidebar-width-icon": "3rem" } as React.CSSProperties}
+      >
+        <Sidebar collapsible="offcanvas">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              className={cn(
+                "flex min-h-0 min-w-[200%] flex-1 will-change-transform transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:duration-0",
+                isSettings ? "-translate-x-1/2" : "translate-x-0",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex min-h-0 w-1/2 shrink-0 flex-col",
+                  isSettings && "pointer-events-none select-none",
+                )}
+                aria-hidden={isSettings}
+              >
+                <SidebarHeader className="border-b">
+                  <div className="flex items-center gap-2 px-1">
+                    <Link to="/new" className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1 py-0.5">
+                      <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+                        V
+                      </div>
+                      <span className="truncate text-sm font-semibold">VibeStudy</span>
+                    </Link>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 shrink-0"
+                          onClick={() => navigate({ to: "/new" })}
+                        >
+                          <Hi icon={Add01Icon} size={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Новая лаба</TooltipContent>
+                    </Tooltip>
                   </div>
-                </Link>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => navigate({ to: "/new" })}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Новая лаба</TooltipContent>
-                </Tooltip>
-              </div>
+                </SidebarHeader>
 
-              {/* Labs list */}
-              <ScrollArea className="flex-1">
-                <div className="py-2">
+                <SidebarContent>
                   {labs.length === 0 ? (
-                    <div className="px-4 py-6 text-center">
-                      <p className="text-[13px] text-muted-foreground">Нет лабораторных</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3 gap-1.5 text-xs"
-                        onClick={() => navigate({ to: "/new" })}
-                      >
-                        <Plus className="h-3 w-3" />
-                        Создать первую
-                      </Button>
-                    </div>
+                    <SidebarGroup>
+                      <SidebarGroupContent className="px-2 py-4 text-center">
+                        <p className="text-[13px] text-sidebar-foreground/70">Нет лабораторных</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 gap-1.5 text-xs"
+                          onClick={() => navigate({ to: "/new" })}
+                        >
+                          <Hi icon={Add01Icon} size={14} />
+                          Создать первую
+                        </Button>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
                   ) : (
                     <>
                       {inProgress.length > 0 && (
-                        <section className="mb-2">
-                          <div className="px-3 pb-1 pt-1.5">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                              В процессе
-                            </span>
-                          </div>
-                          <div className="px-1.5 space-y-0.5">
-                            {inProgress.map((lab) => (
-                              <LabItem
-                                key={lab.id}
-                                lab={lab}
-                                isActive={currentLabId === lab.id}
-                                onClick={() => navigate({ to: "/workspace/$labId", params: { labId: lab.id }, search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined } })}
-                                onDelete={(e) => { e.stopPropagation(); setPendingDelete(lab); }}
-                                onRename={(name) => updateLab(lab.id, { name })}
-                              />
-                            ))}
-                          </div>
-                        </section>
+                        <SidebarGroup>
+                          <SidebarGroupLabel>В процессе</SidebarGroupLabel>
+                          <SidebarGroupContent className="px-1.5">
+                            <ItemGroup className="gap-1" role="list">
+                              {inProgress.map((lab) => (
+                                <LabRow
+                                  key={lab.id}
+                                  lab={lab}
+                                  isActive={currentLabId === lab.id}
+                                  onOpen={() => openLab(lab)}
+                                  onDelete={() => setPendingDelete(lab)}
+                                  onRename={(name) => updateLab(lab.id, { name })}
+                                />
+                              ))}
+                            </ItemGroup>
+                          </SidebarGroupContent>
+                        </SidebarGroup>
                       )}
-
                       {completed.length > 0 && (
-                        <section>
-                          {inProgress.length > 0 && (
-                            <div className="mx-3 mb-2 border-t" />
-                          )}
-                          <div className="px-3 pb-1 pt-1.5">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                              Выполненные
-                            </span>
-                          </div>
-                          <div className="px-1.5 space-y-0.5">
-                            {completed.map((lab) => (
-                              <LabItem
-                                key={lab.id}
-                                lab={lab}
-                                isActive={currentLabId === lab.id}
-                                onClick={() => navigate({ to: "/workspace/$labId", params: { labId: lab.id }, search: { sessionId: undefined, directory: undefined, initialPrompt: undefined, system: undefined } })}
-                                onDelete={(e) => { e.stopPropagation(); setPendingDelete(lab); }}
-                                onRename={(name) => updateLab(lab.id, { name })}
-                              />
-                            ))}
-                          </div>
-                        </section>
+                        <SidebarGroup>
+                          {inProgress.length > 0 && <SidebarSeparator className="my-1" />}
+                          <SidebarGroupLabel>Выполненные</SidebarGroupLabel>
+                          <SidebarGroupContent className="px-1.5">
+                            <ItemGroup className="gap-1" role="list">
+                              {completed.map((lab) => (
+                                <LabRow
+                                  key={lab.id}
+                                  lab={lab}
+                                  isActive={currentLabId === lab.id}
+                                  onOpen={() => openLab(lab)}
+                                  onDelete={() => setPendingDelete(lab)}
+                                  onRename={(name) => updateLab(lab.id, { name })}
+                                />
+                              ))}
+                            </ItemGroup>
+                          </SidebarGroupContent>
+                        </SidebarGroup>
                       )}
                     </>
                   )}
-                </div>
-              </ScrollArea>
+                </SidebarContent>
 
-              {/* Footer */}
-              <div className="flex shrink-0 items-center justify-between border-t px-3 py-2">
-                <div className="flex items-center gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleTheme}>
-                        {theme === "dark"
-                          ? <Sun className="h-3.5 w-3.5" />
-                          : <Moon className="h-3.5 w-3.5" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{theme === "dark" ? "Светлая" : "Тёмная"} тема</TooltipContent>
-                  </Tooltip>
+                <SidebarFooter className="border-t">
+                  <div className="flex items-center justify-between gap-1 px-1">
+                    <div className="flex items-center gap-0.5">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8" onClick={toggleTheme}>
+                            {theme === "dark" ? (
+                              <Hi icon={Sun01Icon} size={14} />
+                            ) : (
+                              <Hi icon={Moon01Icon} size={14} />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{theme === "dark" ? "Светлая" : "Тёмная"} тема</TooltipContent>
+                      </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link to="/settings">
-                        <Button
-                          variant={path === "/settings" ? "secondary" : "ghost"}
-                          size="icon"
-                          className="h-7 w-7"
-                        >
-                          <Settings className="h-3.5 w-3.5" />
-                        </Button>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Настройки</TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-7 w-7 items-center justify-center">
-                      {connected
-                        ? <Wifi className="h-3.5 w-3.5 text-green-500" />
-                        : <WifiOff className="h-3.5 w-3.5 text-muted-foreground/40" />}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link to="/settings" search={{ tab: "profile" }}>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <Hi icon={Settings01Icon} size={14} />
+                            </Button>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Настройки</TooltipContent>
+                      </Tooltip>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {connected ? "OpenCode подключён" : "OpenCode не подключён"}
-                  </TooltipContent>
-                </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex size-8 items-center justify-center">
+                          {connected ? (
+                            <Hi icon={Wifi01Icon} size={14} className="text-primary" />
+                          ) : (
+                            <Hi icon={WifiDisconnected01Icon} size={14} className="text-sidebar-foreground/40" />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {connected ? "OpenCode подключён" : "OpenCode не подключён"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </SidebarFooter>
+              </div>
+
+              <div
+                className={cn(
+                  "flex min-h-0 w-1/2 shrink-0 flex-col",
+                  !isSettings && "pointer-events-none select-none",
+                )}
+                aria-hidden={!isSettings}
+              >
+                <SettingsSidebarHeader />
+                <SidebarContent>
+                  <SettingsSidebarTabs activeTab={settingsTab ?? "profile"} />
+                </SidebarContent>
+                <SidebarFooter className="border-t">
+                  <div className="flex items-center justify-between gap-1 px-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8" onClick={toggleTheme}>
+                          {theme === "dark" ? (
+                            <Hi icon={Sun01Icon} size={14} />
+                          ) : (
+                            <Hi icon={Moon01Icon} size={14} />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{theme === "dark" ? "Светлая" : "Тёмная"} тема</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex size-8 items-center justify-center">
+                          {connected ? (
+                            <Hi icon={Wifi01Icon} size={14} className="text-primary" />
+                          ) : (
+                            <Hi icon={WifiDisconnected01Icon} size={14} className="text-sidebar-foreground/40" />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {connected ? "OpenCode подключён" : "OpenCode не подключён"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </SidebarFooter>
               </div>
             </div>
-          )}
+          </div>
+          <SidebarRail />
+        </Sidebar>
 
-          {/* Collapse toggle — attached to right edge */}
-          <button
-            className="absolute -right-3 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground hover:bg-accent"
-            onClick={() => setCollapsed((v) => !v)}
-          >
-            {collapsed
-              ? <ChevronRight className="h-3 w-3" />
-              : <ChevronLeft className="h-3 w-3" />}
-          </button>
-        </aside>
+        <SidebarInset className="min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex h-11 shrink-0 items-center gap-2 border-b px-2 md:hidden">
+            <SidebarTrigger className="size-8 shrink-0" />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <OpenCodeConnectionGate />
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
 
-        {/* Main content */}
-        <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-          {children}
-        </main>
-
-      </div>
-
-      {/* Delete confirmation dialog */}
-      {pendingDelete && (
-        <DeleteLabDialog
-          lab={pendingDelete}
-          onConfirm={() => {
-            removeLab(pendingDelete.id);
-            // If we were viewing this lab, navigate away
-            if (currentLabId === pendingDelete.id) navigate({ to: "/new" });
-            setPendingDelete(null);
-          }}
-          onCancel={() => setPendingDelete(null)}
-        />
-      )}
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить лабораторную?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-left">
+                <p>
+                  <span className="font-medium text-foreground">{pendingDelete?.name}</span> будет удалена из списка.
+                  Файлы на диске останутся.
+                </p>
+                {pendingDelete?.directory && (
+                  <div className="mt-2 flex items-center gap-1.5 rounded-md border bg-muted/40 px-2.5 py-1.5">
+                    <Hi icon={FolderOpenIcon} size={12} className="shrink-0 text-muted-foreground" />
+                    <span
+                      className="truncate font-mono text-[11px] text-muted-foreground"
+                      title={pendingDelete.directory}
+                    >
+                      {pendingDelete.directory}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!pendingDelete) return;
+                removeLab(pendingDelete.id);
+                if (currentLabId === pendingDelete.id) navigate({ to: "/new" });
+                setPendingDelete(null);
+              }}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }

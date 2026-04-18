@@ -2,7 +2,7 @@
  * Thin wrapper around @opencode-ai/sdk + TanStack Query hooks
  * for the VibeStudy local mode.
  */
-import type { OpencodeClient } from "@opencode-ai/sdk";
+import type { OpencodeClient } from "@opencode-ai/sdk/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConnectionStore } from "@/stores/connection";
 
@@ -78,9 +78,13 @@ async function apiFetch<T>(
 export const qk = {
   sessions:    ()                    => ["sessions"]              as const,
   session:     (id: string)          => ["session", id]           as const,
-  messages:    (sessionId: string)   => ["messages", sessionId]   as const,
+  messages:    (sessionId: string, directory = "") =>
+    ["messages", sessionId, directory] as const,
   files:       (dir: string, p: string) => ["files", dir, p]     as const,
   fileContent: (dir: string, p: string) => ["file", dir, p]      as const,
+  sessionDiff: (sessionId: string, messageId: string | undefined, directory: string) =>
+    ["session-diff", sessionId, messageId ?? "", directory] as const,
+  vcs:         (directory: string)   => ["vcs", directory]       as const,
 };
 
 // ── sessions ───────────────────────────────────────────────────────────────
@@ -111,12 +115,16 @@ export function useCreateSession() {
 
 // ── messages ───────────────────────────────────────────────────────────────
 
-export function useMessages(sessionId: string) {
+export function useMessages(sessionId: string, directory?: string) {
   const connected = useConnectionStore((s) => s.connection.connected);
+  const dir = directory ?? "";
   return useQuery({
-    queryKey: qk.messages(sessionId),
+    queryKey: qk.messages(sessionId, dir),
     enabled: connected && !!sessionId,
-    queryFn: () => apiFetch<SDKMessage[]>(`/session/${sessionId}/message`),
+    queryFn: () =>
+      apiFetch<SDKMessage[]>(`/session/${sessionId}/message`, {
+        query: dir ? { directory: dir } : undefined,
+      }),
   });
 }
 
@@ -128,19 +136,21 @@ export function useSendMessage() {
       fileUrl,
       fileMime,
       system,
+      directory,
     }: {
       sessionId: string;
       text: string;
       fileUrl?: string;
       fileMime?: string;
       system?: string;
+      directory?: string;
     }) => {
       type PartInput = { type: "text"; text: string } | { type: "file"; url: string; mime: string };
       const parts: PartInput[] = [{ type: "text", text }];
       if (fileUrl && fileMime) parts.push({ type: "file", url: fileUrl, mime: fileMime });
-      // promptAsync returns 204 — fire and forget
       await apiFetch<void>(`/session/${sessionId}/prompt_async`, {
         method: "POST",
+        query: directory ? { directory } : undefined,
         body: JSON.stringify({ parts, system }),
       });
     },
@@ -156,17 +166,25 @@ export function useAbortSession() {
 
 // ── files ──────────────────────────────────────────────────────────────────
 
+export type SDKFileEntry = {
+  name: string;
+  path: string;
+  absolute: string;
+  type: "file" | "directory";
+  ignored: boolean;
+};
+
+export async function fetchFileList(directory: string, path: string) {
+  return apiFetch<SDKFileEntry[]>("/file", { query: { directory, path } });
+}
+
 export function useFileList(directory: string, path: string = ".") {
   const connected = useConnectionStore((s) => s.connection.connected);
   return useQuery({
     queryKey: qk.files(directory, path),
     enabled: connected && !!directory,
     staleTime: 5_000,
-    queryFn: () =>
-      apiFetch<Array<{ name: string; path: string; absolute: string; type: "file" | "directory"; ignored: boolean }>>(
-        "/file",
-        { query: { directory, path } }
-      ),
+    queryFn: () => fetchFileList(directory, path),
   });
 }
 
@@ -199,7 +217,7 @@ export function subscribeEvents(
   onError?: (err: unknown) => void
 ): () => void {
   const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/event`;
+  const url = `${baseUrl}/global/event`;
 
   let es: EventSource | null = null;
   let closed = false;
@@ -274,14 +292,23 @@ export function useAgents(directory?: string) {
 export function useRevertSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ sessionId, messageId }: { sessionId: string; messageId: string }) => {
+    mutationFn: async ({
+      sessionId,
+      messageId,
+      directory,
+    }: {
+      sessionId: string;
+      messageId: string;
+      directory?: string;
+    }) => {
       await apiFetch<void>(`/session/${sessionId}/revert`, {
         method: "POST",
+        query: directory ? { directory } : undefined,
         body: JSON.stringify({ messageID: messageId }),
       });
     },
     onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: qk.messages(vars.sessionId) });
+      qc.invalidateQueries({ queryKey: ["messages", vars.sessionId] });
       qc.invalidateQueries({ queryKey: qk.sessions() });
     },
   });
@@ -290,11 +317,94 @@ export function useRevertSession() {
 export function useUnrevertSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (sessionId: string) => {
-      await apiFetch<void>(`/session/${sessionId}/unrevert`, { method: "POST", body: JSON.stringify({}) });
+    mutationFn: async ({
+      sessionId,
+      directory,
+    }: {
+      sessionId: string;
+      directory?: string;
+    }) => {
+      await apiFetch<void>(`/session/${sessionId}/unrevert`, {
+        method: "POST",
+        query: directory ? { directory } : undefined,
+        body: JSON.stringify({}),
+      });
     },
-    onSuccess: (_d, sessionId) => {
-      qc.invalidateQueries({ queryKey: qk.messages(sessionId) });
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["messages", vars.sessionId] });
+    },
+  });
+}
+
+export type FileDiffRow = {
+  file: string;
+  before: string;
+  after: string;
+  additions: number;
+  deletions: number;
+};
+
+export async function fetchSessionDiff(
+  sessionId: string,
+  directory: string,
+  messageID?: string
+) {
+  return apiFetch<FileDiffRow[]>(`/session/${sessionId}/diff`, {
+    query: {
+      directory,
+      ...(messageID ? { messageID } : {}),
+    },
+  });
+}
+
+export function useSessionDiff(
+  sessionId: string | undefined,
+  directory: string | undefined,
+  messageID: string | undefined
+) {
+  const connected = useConnectionStore((s) => s.connection.connected);
+  return useQuery({
+    queryKey: qk.sessionDiff(sessionId ?? "", messageID, directory ?? ""),
+    enabled: connected && !!sessionId && !!directory && !!messageID,
+    queryFn: () => fetchSessionDiff(sessionId!, directory!, messageID),
+  });
+}
+
+export type VcsInfo = { branch: string };
+
+export async function fetchVcsInfo(directory: string) {
+  return apiFetch<VcsInfo>("/vcs", { query: { directory } });
+}
+
+export function useVcsInfo(directory: string | undefined) {
+  const connected = useConnectionStore((s) => s.connection.connected);
+  return useQuery({
+    queryKey: qk.vcs(directory ?? ""),
+    enabled: connected && !!directory,
+    queryFn: () => fetchVcsInfo(directory!),
+    retry: false,
+  });
+}
+
+export function useGitInit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      directory,
+    }: {
+      sessionId: string;
+      directory: string;
+    }) => {
+      await apiFetch(`/session/${sessionId}/shell`, {
+        method: "POST",
+        query: { directory },
+        body: JSON.stringify({ agent: "general", command: "git init" }),
+      });
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: qk.vcs(vars.directory) });
+      qc.invalidateQueries({ queryKey: ["files", vars.directory] });
     },
   });
 }

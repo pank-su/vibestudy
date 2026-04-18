@@ -1,4 +1,4 @@
-import { createOpencodeClient, type OpencodeClient } from "@opencode-ai/sdk";
+import { createOpencodeClient, type OpencodeClient } from "@opencode-ai/sdk/client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

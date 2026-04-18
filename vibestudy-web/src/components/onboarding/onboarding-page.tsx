@@ -4,6 +4,13 @@ import { ArrowRight, ArrowLeft, GraduationCap, User, Settings2 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { useProfileStore, type UserProfile } from "@/stores/profile";
 
 const STEPS = [
@@ -66,7 +73,7 @@ export function OnboardingPage() {
           {STEPS.map((s, i) => (
             <div key={s.id} className="flex items-center gap-2">
               <div
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                className={`flex h-6 w-6 aspect-square items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                   i < step
                     ? "bg-primary text-primary-foreground"
                     : i === step
@@ -100,27 +107,33 @@ export function OnboardingPage() {
                   Эти данные будут использоваться при оформлении отчётов
                 </p>
               </div>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Учебное заведение *</label>
-                  <Input
-                    placeholder="МГТУ им. Баумана"
-                    value={form.university ?? ""}
-                    onChange={(e) => update("university", e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Факультет / Институт</label>
-                  <Input
-                    placeholder="ИУ (Информатика и системы управления)"
-                    value={form.faculty ?? ""}
-                    onChange={(e) => update("faculty", e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
-                  />
-                </div>
-              </div>
+              <FieldGroup className="gap-4">
+                <Field>
+                  <FieldLabel htmlFor="onb-university">Учебное заведение *</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="onb-university"
+                      placeholder="МГТУ им. Баумана"
+                      value={form.university ?? ""}
+                      onChange={(e) => update("university", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
+                      autoFocus
+                    />
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="onb-faculty">Факультет / Институт</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="onb-faculty"
+                      placeholder="ИУ (Информатика и системы управления)"
+                      value={form.faculty ?? ""}
+                      onChange={(e) => update("faculty", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
+                    />
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
             </>
           )}
 
@@ -132,27 +145,33 @@ export function OnboardingPage() {
                   ФИО и учебная группа для титульных листов
                 </p>
               </div>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">ФИО *</label>
-                  <Input
-                    placeholder="Иванов Иван Иванович"
-                    value={form.fullName ?? ""}
-                    onChange={(e) => update("fullName", e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && form.group?.trim() && handleNext()}
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Группа *</label>
-                  <Input
-                    placeholder="ИУ5-41"
-                    value={form.group ?? ""}
-                    onChange={(e) => update("group", e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
-                  />
-                </div>
-              </div>
+              <FieldGroup className="gap-4">
+                <Field>
+                  <FieldLabel htmlFor="onb-fullname">ФИО *</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="onb-fullname"
+                      placeholder="Иванов Иван Иванович"
+                      value={form.fullName ?? ""}
+                      onChange={(e) => update("fullName", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && form.group?.trim() && handleNext()}
+                      autoFocus
+                    />
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="onb-group">Группа *</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="onb-group"
+                      placeholder="ИУ5-41"
+                      value={form.group ?? ""}
+                      onChange={(e) => update("group", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && canNext() && handleNext()}
+                    />
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
             </>
           )}
 
@@ -164,30 +183,36 @@ export function OnboardingPage() {
                   Необязательно — AI будет учитывать это при выполнении работ
                 </p>
               </div>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Вариант по умолчанию</label>
-                  <Input
-                    placeholder="5"
-                    value={form.variantGroup ?? ""}
-                    onChange={(e) => update("variantGroup", e.target.value)}
-                    autoFocus
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Номер варианта заданий, если он одинаковый для всех работ
-                  </p>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Доп. информация</label>
-                  <Textarea
-                    placeholder="Например: преподаватель обычно требует комментарии на русском, код на C++17, отчёт в ГОСТ-стиле..."
-                    value={form.extraInfo ?? ""}
-                    onChange={(e) => update("extraInfo", e.target.value)}
-                    className="min-h-[100px] resize-none text-sm"
-                    rows={4}
-                  />
-                </div>
-              </div>
+              <FieldGroup className="gap-4">
+                <Field>
+                  <FieldLabel htmlFor="onb-variant">Вариант по умолчанию</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="onb-variant"
+                      placeholder="5"
+                      value={form.variantGroup ?? ""}
+                      onChange={(e) => update("variantGroup", e.target.value)}
+                      autoFocus
+                    />
+                    <FieldDescription className="text-xs">
+                      Номер варианта заданий, если он одинаковый для всех работ
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="onb-extra">Доп. информация</FieldLabel>
+                  <FieldContent>
+                    <Textarea
+                      id="onb-extra"
+                      placeholder="Например: преподаватель обычно требует комментарии на русском, код на C++17, отчёт в ГОСТ-стиле..."
+                      value={form.extraInfo ?? ""}
+                      onChange={(e) => update("extraInfo", e.target.value)}
+                      className="min-h-[100px] resize-none text-sm"
+                      rows={4}
+                    />
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
             </>
           )}
         </div>
