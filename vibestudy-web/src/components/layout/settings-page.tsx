@@ -1,26 +1,30 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useState, useMemo } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  ArrowLeft,
-  Wifi,
-  Cloud,
-  Sun,
-  Moon,
-  Check,
-  Folder,
-  User,
-  Monitor,
-  Cpu,
-  Search,
-  X,
-  Zap,
-  Brain,
-  ChevronDown,
-} from "lucide-react";
+  ArrowDown01Icon,
+  Brain01Icon,
+  Cancel01Icon,
+  CloudIcon,
+  Folder01Icon,
+  Search01Icon,
+  Tick02Icon,
+  Wifi01Icon,
+  ZapIcon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useConnectionStore } from "@/stores/connection";
 import { useProfileStore } from "@/stores/profile";
 import {
@@ -28,22 +32,27 @@ import {
   TEMPLATE_AGENTS,
   LIGHT_AGENTS,
   HEAVY_AGENTS,
-  type ModelMode,
 } from "@/stores/local-settings";
 import { useProviders } from "@/lib/opencode-client";
-import { useTheme } from "@/hooks/use-theme";
-
-// ── types ──────────────────────────────────────────────────────────────────
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import { Hi } from "@/components/ui/hi";
+import { cn } from "@/lib/utils";
+import { parseSettingsTab } from "@/components/layout/settings-nav";
 
 interface ModelOption {
-  value: string;       // "providerID/modelID"
-  label: string;       // "Claude 3.5 Sonnet"
-  provider: string;    // "Anthropic"
+  value: string;
+  label: string;
+  provider: string;
   providerId: string;
 }
-
-// ── ModelPicker ────────────────────────────────────────────────────────────
-// Dropdown with search, grouped by provider
 
 function ModelPicker({
   value,
@@ -58,30 +67,16 @@ function ModelPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const filtered = query.trim()
     ? options.filter(
         (o) =>
           o.label.toLowerCase().includes(query.toLowerCase()) ||
           o.provider.toLowerCase().includes(query.toLowerCase()) ||
-          o.value.toLowerCase().includes(query.toLowerCase())
+          o.value.toLowerCase().includes(query.toLowerCase()),
       )
     : options;
 
-  // Group by provider
   const grouped: Record<string, ModelOption[]> = {};
   for (const o of filtered) {
     if (!grouped[o.provider]) grouped[o.provider] = [];
@@ -92,110 +87,108 @@ function ModelPicker({
   const displayLabel = current ? `${current.provider} / ${current.label}` : placeholder;
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => { setOpen((v) => !v); setQuery(""); }}
-        className={`flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm transition-colors hover:bg-accent/50 ${
-          open ? "ring-2 ring-ring" : ""
-        }`}
-      >
-        <span className={`truncate ${!current ? "text-muted-foreground" : ""}`}>
-          {displayLabel}
-        </span>
-        <div className="flex items-center gap-1 shrink-0">
-          {value && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onChange(""); }}
-              className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-        </div>
-      </button>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg">
-          {/* Search */}
-          <div className="flex items-center gap-2 border-b px-3 py-2">
-            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <input
-              autoFocus
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              placeholder="Поиск модели..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setQuery("");
+      }}
+    >
+      <div className="flex w-full min-w-0 gap-1">
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "h-auto min-h-9 min-w-0 flex-1 justify-between gap-2 px-3 py-2 font-normal shadow-xs",
+              !current && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate">{displayLabel}</span>
+            <Hi
+              icon={ArrowDown01Icon}
+              size={14}
+              className={cn("shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
             />
-          </div>
-
-          {/* Options */}
-          <div className="max-h-60 overflow-y-auto py-1">
-            {/* Default option */}
+          </Button>
+        </PopoverTrigger>
+        {value ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={() => onChange("")}
+          >
+            <Hi icon={Cancel01Icon} size={14} />
+          </Button>
+        ) : null}
+      </div>
+      <PopoverContent
+        align="start"
+        className="max-h-[min(24rem,70vh)] overflow-hidden p-0"
+        style={{ width: "var(--radix-popover-trigger-width)" }}
+      >
+        <div className="flex items-center gap-2 border-b px-3 py-2">
+          <Hi icon={Search01Icon} size={14} className="shrink-0 text-muted-foreground" />
+          <Input
+            autoFocus
+            placeholder="Поиск модели…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+          />
+        </div>
+        <ScrollArea className="max-h-60">
+          <div className="p-1">
             <button
               type="button"
-              onClick={() => { onChange(""); setOpen(false); setQuery(""); }}
-              className={`flex w-full items-center px-3 py-1.5 text-sm hover:bg-accent transition-colors ${
-                !value ? "text-primary font-medium" : "text-muted-foreground"
-              }`}
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+                setQuery("");
+              }}
+              className={cn(
+                "flex w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent",
+                !value ? "font-medium text-primary" : "text-muted-foreground",
+              )}
             >
               {placeholder}
             </button>
-
             {Object.keys(grouped).length === 0 && (
-              <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                Ничего не найдено
-              </p>
+              <p className="px-3 py-4 text-center text-sm text-muted-foreground">Ничего не найдено</p>
             )}
-
             {Object.entries(grouped).map(([provider, models]) => (
               <div key={provider}>
-                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                <p className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                   {provider}
                 </p>
                 {models.map((m) => (
                   <button
                     key={m.value}
                     type="button"
-                    onClick={() => { onChange(m.value); setOpen(false); setQuery(""); }}
-                    className={`flex w-full items-center px-3 py-1.5 text-sm hover:bg-accent transition-colors ${
-                      value === m.value ? "text-primary font-medium" : ""
-                    }`}
+                    onClick={() => {
+                      onChange(m.value);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent",
+                      value === m.value ? "font-medium text-primary" : "",
+                    )}
                   >
-                    {m.label}
-                    {value === m.value && <Check className="ml-auto h-3.5 w-3.5" />}
+                    <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                    {value === m.value ? <Hi icon={Tick02Icon} size={14} className="shrink-0" /> : null}
                   </button>
                 ))}
               </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── helpers ────────────────────────────────────────────────────────────────
-
-function FieldRow({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-      <div className="pt-2">
-        <p className="text-sm font-medium">{label}</p>
-        {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
-      </div>
-      <div>{children}</div>
-    </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -203,36 +196,36 @@ function useModelOptions() {
   const { data: providersData } = useProviders();
   const connected = useConnectionStore((s) => s.connection.connected);
 
-  if (!connected || !providersData) return [];
+  return useMemo(() => {
+    if (!connected || !providersData) return [];
 
-  const options: ModelOption[] = [];
-  for (const p of providersData.all) {
-    if (!(providersData.connected ?? []).includes(p.id)) continue;
-    for (const [, m] of Object.entries(p.models)) {
-      options.push({
-        value: `${p.id}/${m.id}`,
-        label: (m as { name?: string; id: string }).name || m.id,
-        provider: p.name,
-        providerId: p.id,
-      });
+    const options: ModelOption[] = [];
+    for (const p of providersData.all) {
+      if (!(providersData.connected ?? []).includes(p.id)) continue;
+      for (const [, m] of Object.entries(p.models)) {
+        options.push({
+          value: `${p.id}/${m.id}`,
+          label: (m as { name?: string; id: string }).name || m.id,
+          provider: p.name,
+          providerId: p.id,
+        });
+      }
     }
-  }
-  return options;
+    return options;
+  }, [connected, providersData]);
 }
-
-// ── sections ───────────────────────────────────────────────────────────────
 
 function SectionProfile() {
   const { profile, setProfile, resetOnboarding } = useProfileStore();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    university:   profile?.university   ?? "",
-    faculty:      profile?.faculty      ?? "",
-    fullName:     profile?.fullName     ?? "",
-    group:        profile?.group        ?? "",
+    university: profile?.university ?? "",
+    faculty: profile?.faculty ?? "",
+    fullName: profile?.fullName ?? "",
+    group: profile?.group ?? "",
     variantGroup: profile?.variantGroup ?? "",
-    extraInfo:    profile?.extraInfo    ?? "",
+    extraInfo: profile?.extraInfo ?? "",
   });
   const [saved, setSaved] = useState(false);
 
@@ -248,59 +241,127 @@ function SectionProfile() {
   }
 
   const dirty =
-    form.university   !== (profile?.university   ?? "") ||
-    form.faculty      !== (profile?.faculty      ?? "") ||
-    form.fullName     !== (profile?.fullName     ?? "") ||
-    form.group        !== (profile?.group        ?? "") ||
+    form.university !== (profile?.university ?? "") ||
+    form.faculty !== (profile?.faculty ?? "") ||
+    form.fullName !== (profile?.fullName ?? "") ||
+    form.group !== (profile?.group ?? "") ||
     form.variantGroup !== (profile?.variantGroup ?? "") ||
-    form.extraInfo    !== (profile?.extraInfo    ?? "");
+    form.extraInfo !== (profile?.extraInfo ?? "");
 
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-base font-semibold">Профиль</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Используется в отчётах и при выполнении лаб
-        </p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Используется в отчётах и при выполнении лаб</p>
       </div>
 
       <div className="space-y-4">
-        <FieldRow label="ФИО">
-          <Input placeholder="Иванов Иван Иванович" value={form.fullName}
-            onChange={(e) => update("fullName", e.target.value)} />
-        </FieldRow>
-        <FieldRow label="Учебное заведение">
-          <Input placeholder="МГТУ им. Баумана" value={form.university}
-            onChange={(e) => update("university", e.target.value)} />
-        </FieldRow>
-        <FieldRow label="Факультет / Институт">
-          <Input placeholder="ИУ" value={form.faculty}
-            onChange={(e) => update("faculty", e.target.value)} />
-        </FieldRow>
-        <FieldRow label="Группа">
-          <Input placeholder="ИУ5-41" value={form.group}
-            onChange={(e) => update("group", e.target.value)} />
-        </FieldRow>
-        <FieldRow label="Вариант" hint="Номер варианта для всех работ">
-          <Input placeholder="5" value={form.variantGroup}
-            onChange={(e) => update("variantGroup", e.target.value)}
-            className="max-w-[120px]" />
-        </FieldRow>
-        <FieldRow label="Доп. информация" hint="AI учитывает при выполнении">
-          <Textarea placeholder="Например: код на C++17, комментарии на русском..."
-            value={form.extraInfo}
-            onChange={(e) => update("extraInfo", e.target.value)}
-            className="min-h-[80px] resize-none text-sm" rows={3} />
-        </FieldRow>
+        <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+          <div className="space-y-0.5 pt-2">
+            <FieldLabel htmlFor="pf-name" className="text-sm font-medium">
+              ФИО
+            </FieldLabel>
+          </div>
+          <FieldContent>
+            <Input
+              id="pf-name"
+              placeholder="Иванов Иван Иванович"
+              value={form.fullName}
+              onChange={(e) => update("fullName", e.target.value)}
+            />
+          </FieldContent>
+        </Field>
+        <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+          <div className="space-y-0.5 pt-2">
+            <FieldLabel htmlFor="pf-uni" className="text-sm font-medium">
+              Учебное заведение
+            </FieldLabel>
+          </div>
+          <FieldContent>
+            <Input
+              id="pf-uni"
+              placeholder="МГТУ им. Баумана"
+              value={form.university}
+              onChange={(e) => update("university", e.target.value)}
+            />
+          </FieldContent>
+        </Field>
+        <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+          <div className="space-y-0.5 pt-2">
+            <FieldLabel htmlFor="pf-fac" className="text-sm font-medium">
+              Факультет / Институт
+            </FieldLabel>
+          </div>
+          <FieldContent>
+            <Input id="pf-fac" placeholder="ИУ" value={form.faculty} onChange={(e) => update("faculty", e.target.value)} />
+          </FieldContent>
+        </Field>
+        <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+          <div className="space-y-0.5 pt-2">
+            <FieldLabel htmlFor="pf-gr" className="text-sm font-medium">
+              Группа
+            </FieldLabel>
+          </div>
+          <FieldContent>
+            <Input id="pf-gr" placeholder="ИУ5-41" value={form.group} onChange={(e) => update("group", e.target.value)} />
+          </FieldContent>
+        </Field>
+        <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+          <div className="space-y-0.5 pt-2">
+            <FieldLabel htmlFor="pf-var" className="text-sm font-medium">
+              Вариант
+            </FieldLabel>
+            <FieldDescription className="text-xs">Номер варианта для всех работ</FieldDescription>
+          </div>
+          <FieldContent>
+            <Input
+              id="pf-var"
+              placeholder="5"
+              value={form.variantGroup}
+              onChange={(e) => update("variantGroup", e.target.value)}
+              className="max-w-[120px]"
+            />
+          </FieldContent>
+        </Field>
+        <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+          <div className="space-y-0.5 pt-2">
+            <FieldLabel htmlFor="pf-extra" className="text-sm font-medium">
+              Доп. информация
+            </FieldLabel>
+            <FieldDescription className="text-xs">AI учитывает при выполнении</FieldDescription>
+          </div>
+          <FieldContent>
+            <Textarea
+              id="pf-extra"
+              placeholder="Например: код на C++17, комментарии на русском…"
+              value={form.extraInfo}
+              onChange={(e) => update("extraInfo", e.target.value)}
+              className="min-h-[80px] resize-none text-sm"
+              rows={3}
+            />
+          </FieldContent>
+        </Field>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button size="sm" onClick={save} disabled={!dirty && !saved} className="gap-2">
-          {saved ? <><Check className="h-3.5 w-3.5" />Сохранено</> : "Сохранить"}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={save} disabled={!dirty && !saved} className="gap-2">
+          {saved ? (
+            <>
+              <Hi icon={Tick02Icon} size={14} />
+              Сохранено
+            </>
+          ) : (
+            "Сохранить"
+          )}
         </Button>
-        <Button variant="ghost" size="sm"
+        <Button
+          variant="ghost"
           className="text-muted-foreground hover:text-destructive"
-          onClick={() => { resetOnboarding(); navigate({ to: "/onboarding" }); }}>
+          onClick={() => {
+            resetOnboarding();
+            navigate({ to: "/onboarding" });
+          }}
+        >
           Пройти настройку заново
         </Button>
       </div>
@@ -311,11 +372,17 @@ function SectionProfile() {
 function SectionLocal() {
   const { connection, connect, disconnect } = useConnectionStore();
   const {
-    labsDirectory, setLabsDirectory,
-    modelMode, setModelMode,
-    lightModel, setLightModel,
-    heavyModel, setHeavyModel,
-    agentModels, setAgentModel, clearAgentModel,
+    labsDirectory,
+    setLabsDirectory,
+    modelMode,
+    setModelMode,
+    lightModel,
+    setLightModel,
+    heavyModel,
+    setHeavyModel,
+    agentModels,
+    setAgentModel,
+    clearAgentModel,
   } = useLocalSettingsStore();
 
   const [baseUrl, setBaseUrl] = useState(connection.baseUrl);
@@ -343,45 +410,42 @@ function SectionLocal() {
     <div className="space-y-6">
       <div>
         <h2 className="text-base font-semibold">Локальный режим</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          OpenCode запускается на вашем компьютере
-        </p>
+        <p className="mt-0.5 text-sm text-muted-foreground">OpenCode запускается на вашем компьютере</p>
       </div>
 
-      {/* Connection */}
       <div className="space-y-3">
         <p className="text-sm font-medium">Подключение</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Input
             placeholder="http://localhost:4096"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            className="flex-1 font-mono text-sm"
+            className="min-w-0 flex-1 font-mono text-sm"
           />
           {connection.connected ? (
-            <Button variant="outline" onClick={disconnect} className="gap-2 shrink-0">
-              <Wifi className="h-4 w-4 text-green-500" />
+            <Button variant="outline" onClick={disconnect} className="shrink-0 gap-2">
+              <Hi icon={Wifi01Icon} size={16} className="text-primary" />
               Отключить
             </Button>
           ) : (
-            <Button onClick={handleConnect} disabled={isConnecting} className="shrink-0">
+            <Button onClick={() => void handleConnect()} disabled={isConnecting} className="shrink-0">
               {isConnecting ? "Подключение…" : "Подключить"}
             </Button>
           )}
         </div>
-        <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+        <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
           <p className="text-xs font-medium text-muted-foreground">При разработке:</p>
-          <code className="block rounded bg-background border px-3 py-2 text-xs font-mono select-all">
+          <code className="block select-all rounded border bg-background px-3 py-2 font-mono text-xs">
             pnpm dev
           </code>
           <p className="text-xs font-medium text-muted-foreground">Только сервер OpenCode:</p>
-          <code className="block rounded bg-background border px-3 py-2 text-xs font-mono select-all">
+          <code className="block select-all rounded border bg-background px-3 py-2 font-mono text-xs">
             pnpm exec opencode serve --port 4096 --cors http://localhost:5173
           </code>
         </div>
         {connection.connected && (
-          <p className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-            <Wifi className="h-3 w-3" />
+          <p className="flex items-center gap-1.5 text-xs text-primary">
+            <Hi icon={Wifi01Icon} size={12} />
             Подключено к {connection.baseUrl}
           </p>
         )}
@@ -389,100 +453,118 @@ function SectionLocal() {
 
       <Separator />
 
-      {/* Labs directory */}
       <div className="space-y-2">
         <p className="text-sm font-medium">Папка для лаб</p>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Folder className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex flex-wrap gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Hi
+              icon={Folder01Icon}
+              size={16}
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
             <Input
               placeholder="~/vibestudy"
               value={dirInput}
-              onChange={(e) => { setDirInput(e.target.value); setDirSaved(false); }}
+              onChange={(e) => {
+                setDirInput(e.target.value);
+                setDirSaved(false);
+              }}
               className="pl-8 font-mono text-sm"
             />
           </div>
-          <Button size="sm" variant={dirSaved ? "outline" : "default"}
-            onClick={saveDir} disabled={!dirDirty && !dirSaved}
-            className="shrink-0 gap-1.5">
-            {dirSaved ? <><Check className="h-3.5 w-3.5" />Сохранено</> : "Сохранить"}
+          <Button
+            variant={dirSaved ? "outline" : "default"}
+            onClick={saveDir}
+            disabled={!dirDirty && !dirSaved}
+            className="shrink-0 gap-1.5"
+          >
+            {dirSaved ? (
+              <>
+                <Hi icon={Tick02Icon} size={14} />
+                Сохранено
+              </>
+            ) : (
+              "Сохранить"
+            )}
           </Button>
         </div>
       </div>
 
       <Separator />
 
-      {/* Model settings */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-medium">Модели агентов</p>
-          {/* Mode toggle */}
-          <div className="flex rounded-md border p-0.5 gap-0.5">
-            {(["simple", "advanced"] as ModelMode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setModelMode(m)}
-                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                  modelMode === m
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {m === "simple" ? "Простой" : "Сложный"}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={modelMode}
+            onValueChange={(v) => {
+              if (v === "simple" || v === "advanced") setModelMode(v as "simple" | "advanced");
+            }}
+            variant="outline"
+            spacing={2}
+          >
+            <ToggleGroupItem value="simple" className="text-xs">
+              Простой
+            </ToggleGroupItem>
+            <ToggleGroupItem value="advanced" className="text-xs">
+              Сложный
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         {!connection.connected ? (
-          <p className="text-sm text-muted-foreground">
-            Подключитесь к OpenCode, чтобы выбрать модели
-          </p>
+          <p className="text-sm text-muted-foreground">Подключитесь к OpenCode, чтобы выбрать модели</p>
         ) : modelOptions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Нет подключённых провайдеров с моделями
-          </p>
+          <p className="text-sm text-muted-foreground">Нет подключённых провайдеров с моделями</p>
         ) : modelMode === "simple" ? (
-          /* ── Simple mode ── */
           <div className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Лёгкая модель используется для verificator, writer, qa, study-material.
-              Тяжёлая — для report, coder, math.
+              Лёгкая модель используется для verificator, writer, qa, study-material. Тяжёлая — для report, coder,
+              math.
             </p>
             <div className="space-y-3">
-              <FieldRow label="Лёгкая модель"
-                hint={LIGHT_AGENTS.join(", ")}>
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 shrink-0 text-amber-500" />
-                  <div className="flex-1">
-                    <ModelPicker
-                      value={lightModel}
-                      onChange={setLightModel}
-                      options={modelOptions}
-                      placeholder="По умолчанию из opencode.json"
-                    />
-                  </div>
+              <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+                <div className="space-y-0.5 pt-2">
+                  <FieldTitle>Лёгкая модель</FieldTitle>
+                  <FieldDescription className="text-xs">{LIGHT_AGENTS.join(", ")}</FieldDescription>
                 </div>
-              </FieldRow>
-              <FieldRow label="Тяжёлая модель"
-                hint={HEAVY_AGENTS.join(", ")}>
-                <div className="flex items-center gap-2">
-                  <Brain className="h-4 w-4 shrink-0 text-purple-500" />
-                  <div className="flex-1">
-                    <ModelPicker
-                      value={heavyModel}
-                      onChange={setHeavyModel}
-                      options={modelOptions}
-                      placeholder="По умолчанию из opencode.json"
-                    />
+                <FieldContent>
+                  <div className="flex items-center gap-2">
+                    <Hi icon={ZapIcon} size={16} className="shrink-0 text-amber-500" />
+                    <div className="min-w-0 flex-1">
+                      <ModelPicker
+                        value={lightModel}
+                        onChange={setLightModel}
+                        options={modelOptions}
+                        placeholder="По умолчанию из opencode.json"
+                      />
+                    </div>
                   </div>
+                </FieldContent>
+              </Field>
+              <Field className="grid grid-cols-[160px_1fr] items-start gap-4">
+                <div className="space-y-0.5 pt-2">
+                  <FieldTitle>Тяжёлая модель</FieldTitle>
+                  <FieldDescription className="text-xs">{HEAVY_AGENTS.join(", ")}</FieldDescription>
                 </div>
-              </FieldRow>
+                <FieldContent>
+                  <div className="flex items-center gap-2">
+                    <Hi icon={Brain01Icon} size={16} className="shrink-0 text-purple-500" />
+                    <div className="min-w-0 flex-1">
+                      <ModelPicker
+                        value={heavyModel}
+                        onChange={setHeavyModel}
+                        options={modelOptions}
+                        placeholder="По умолчанию из opencode.json"
+                      />
+                    </div>
+                  </div>
+                </FieldContent>
+              </Field>
             </div>
           </div>
         ) : (
-          /* ── Advanced mode ── */
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
               Выберите модель для каждого агента. «По умолчанию» — модель из opencode.json шаблона.
@@ -491,20 +573,18 @@ function SectionLocal() {
               <div key={agent.name} className="grid grid-cols-[160px_1fr] items-center gap-4">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    {agent.weight === "heavy"
-                      ? <Brain className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-                      : <Zap className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                    {agent.weight === "heavy" ? (
+                      <Hi icon={Brain01Icon} size={14} className="shrink-0 text-purple-500" />
+                    ) : (
+                      <Hi icon={ZapIcon} size={14} className="shrink-0 text-amber-500" />
+                    )}
                     <p className="text-sm font-medium">{agent.label}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate pl-5">
-                    {agent.desc}
-                  </p>
+                  <p className="mt-0.5 truncate pl-5 text-xs text-muted-foreground">{agent.desc}</p>
                 </div>
                 <ModelPicker
                   value={agentModels[agent.name] ?? ""}
-                  onChange={(v) =>
-                    v ? setAgentModel(agent.name, v) : clearAgentModel(agent.name)
-                  }
+                  onChange={(v) => (v ? setAgentModel(agent.name, v) : clearAgentModel(agent.name))}
                   options={modelOptions}
                 />
               </div>
@@ -516,105 +596,46 @@ function SectionLocal() {
   );
 }
 
-function SectionAppearance() {
-  const { theme, toggleTheme } = useTheme();
-  return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-base font-semibold">Внешний вид</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Тема интерфейса</p>
-      </div>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium">Тема</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {theme === "dark" ? "Тёмная тема активна" : "Светлая тема активна"}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={toggleTheme} className="gap-2">
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          Переключить
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function SectionCloud() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold">Облачный режим</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Запуск лаб на серверах без установки OpenCode
-        </p>
+        <h2 className="text-base font-semibold">Облако</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">Запуск лаб на серверах без установки OpenCode</p>
       </div>
-      <div className="flex items-center justify-between rounded-lg border p-4">
-        <div>
-          <p className="text-sm font-medium">Подписка через Telegram Stars</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Выполнение лаб в облаке — в разработке
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" disabled className="gap-2">
-          <Cloud className="h-4 w-4" />
-          Скоро
-        </Button>
-      </div>
+      <ItemGroup>
+        <Item variant="outline" size="sm">
+          <ItemMedia variant="icon">
+            <Hi icon={CloudIcon} size={18} />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Подписка через Telegram Stars</ItemTitle>
+            <ItemDescription>Выполнение лаб в облаке — в разработке</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button size="sm" variant="secondary" disabled>
+              Скоро
+            </Button>
+          </ItemActions>
+        </Item>
+      </ItemGroup>
     </div>
   );
 }
 
-// ── Nav ────────────────────────────────────────────────────────────────────
-
-type Tab = "profile" | "local" | "appearance" | "cloud";
-
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "profile",    label: "Профиль",    icon: User    },
-  { id: "local",      label: "Локальный",  icon: Cpu     },
-  { id: "appearance", label: "Внешний вид",icon: Monitor },
-  { id: "cloud",      label: "Облако",     icon: Cloud   },
-];
-
-// ── Page ───────────────────────────────────────────────────────────────────
-
 export function SettingsPage() {
-  const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("profile");
+  const search = useSearch({ strict: false }) as { tab?: unknown };
+  const tab = parseSettingsTab(search.tab);
 
   return (
-    <div className="flex h-full">
-      {/* Sidebar nav */}
-      <nav className="flex w-44 shrink-0 flex-col gap-0.5 border-r p-3 pt-4">
-        <div className="mb-2 flex items-center gap-2 px-2">
-          <Button variant="ghost" size="icon" className="h-7 w-7"
-            onClick={() => navigate({ to: "/new" })}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold">Настройки</span>
-        </div>
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-              tab === id
-                ? "bg-accent text-accent-foreground font-medium"
-                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-            }`}>
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-8 py-8 max-w-xl">
-          {tab === "profile"    && <SectionProfile />}
-          {tab === "local"      && <SectionLocal />}
-          {tab === "appearance" && <SectionAppearance />}
-          {tab === "cloud"      && <SectionCloud />}
+    <ScrollArea className="h-full min-h-0">
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
+        <div className="mx-auto max-w-xl">
+          {tab === "profile" ? <SectionProfile /> : null}
+          {tab === "local" ? <SectionLocal /> : null}
+          {tab === "cloud" ? <SectionCloud /> : null}
         </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 }

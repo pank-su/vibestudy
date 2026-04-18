@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import {
-  Bot,
-  User,
-  RotateCcw,
-  RotateCw,
-  Loader2,
-  GitBranch,
-  FileDiff,
-  ChevronDown,
-} from "lucide-react";
+  ArrowDown01Icon,
+  BotIcon,
+  FileDiffIcon,
+  GitBranchIcon,
+  Loading03Icon,
+  Rotate01Icon,
+  Rotate02Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Hi } from "@/components/ui/hi";
 import {
   useMessages,
   useRevertSession,
@@ -79,47 +80,51 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
 
   if (!sessionId) {
     return (
-      <div className="flex h-full flex-col">
-        <div className="flex h-9 shrink-0 items-center border-b px-3">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+      <div className="flex h-full flex-col bg-background">
+        <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-4">
+          <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             Версии
           </span>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-xs text-muted-foreground">Нет сессии</p>
+          <p className="font-sans text-xs text-muted-foreground">Нет сессии</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-9 shrink-0 items-center justify-between border-b px-3">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-4">
+        <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           Версии
         </span>
         <div className="flex items-center gap-1">
-          {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+          {isLoading && (
+            <span className="inline-flex animate-spin text-muted-foreground">
+              <Hi icon={Loading03Icon} size={14} />
+            </span>
+          )}
           {isReverted && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="size-7 text-muted-foreground hover:bg-muted hover:text-foreground"
               title="Вернуть (unrevert)"
               disabled={unrevert.isPending}
               type="button"
               onClick={() => unrevert.mutate({ sessionId, directory })}
             >
-              <RotateCw className="h-3 w-3" />
+              <Hi icon={Rotate02Icon} size={16} />
             </Button>
           )}
         </div>
       </div>
 
       {directory && (
-        <div className="shrink-0 space-y-1.5 border-b px-3 py-2">
-          <div className="flex items-center gap-2 text-[11px]">
-            <GitBranch className="h-3 w-3 shrink-0 text-muted-foreground" />
+        <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2 font-sans text-[11px]">
+            <Hi icon={GitBranchIcon} size={14} className="shrink-0 text-muted-foreground" />
             {vcsLoading ? (
               <span className="text-muted-foreground">Git…</span>
             ) : gitReady ? (
@@ -127,43 +132,53 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
                 Ветка: <span className="font-mono text-foreground">{vcs?.branch}</span>
               </span>
             ) : (
-              <span className="text-amber-600 dark:text-amber-400">Репозиторий не инициализирован</span>
+              <span className="text-amber-700 dark:text-amber-400">Репозиторий не инициализирован</span>
             )}
           </div>
           {!gitReady && !vcsLoading && (
             <Button
               size="sm"
               variant="outline"
-              className="h-7 w-full text-xs"
+              className="h-7 w-full border-border bg-background font-sans text-xs text-foreground hover:bg-muted"
               disabled={gitInit.isPending || !sessionId}
               type="button"
               onClick={() => gitInit.mutate({ sessionId, directory })}
             >
-              {gitInit.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "git init"}
+              {gitInit.isPending ? (
+                <span className="inline-flex animate-spin">
+                  <Hi icon={Loading03Icon} size={14} />
+                </span>
+              ) : (
+                "git init"
+              )}
             </Button>
           )}
         </div>
       )}
 
       {selectedMsgId && directory && (
-        <div className="shrink-0 border-b px-3 py-2">
+        <div className="shrink-0 border-b border-border px-4 py-2">
           <button
             type="button"
-            className="flex w-full items-center gap-1 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            className="flex w-full items-center gap-1 text-left font-sans text-[11px] font-medium text-muted-foreground hover:text-foreground"
             onClick={() => setSelectedMsgId(null)}
           >
-            <ChevronDown className="h-3 w-3" />
+            <Hi icon={ArrowDown01Icon} size={14} />
             Изменения по версии
           </button>
           {diffLoading ? (
-            <Loader2 className="mx-auto my-2 h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="mx-auto my-2 flex justify-center text-muted-foreground">
+              <span className="inline-flex animate-spin">
+                <Hi icon={Loading03Icon} size={18} />
+              </span>
+            </span>
           ) : diffRows && diffRows.length > 0 ? (
             <ScrollArea className="max-h-40">
-              <div className="space-y-2 pr-2 pt-1">
+              <div className="flex flex-col gap-2 pr-2 pt-1">
                 {diffRows.map((d) => (
-                  <div key={d.file} className="rounded-md border bg-muted/20 p-2">
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono">
-                      <FileDiff className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <div key={d.file} className="rounded-md border border-border bg-background p-2">
+                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <Hi icon={FileDiffIcon} size={14} className="shrink-0 text-muted-foreground" />
                       <span className="truncate" title={d.file}>{d.file}</span>
                       <span className="ml-auto shrink-0 text-green-600 tabular-nums dark:text-green-400">
                         +{d.additions}
@@ -178,15 +193,15 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
               </div>
             </ScrollArea>
           ) : (
-            <p className="py-2 text-center text-[11px] text-muted-foreground">Нет diff для этой версии</p>
+            <p className="py-2 text-center font-sans text-[11px] text-muted-foreground">Нет diff для этой версии</p>
           )}
         </div>
       )}
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="p-1">
+        <div className="px-1 pb-2">
           {versions.length === 0 && !isLoading && (
-            <p className="px-3 py-4 text-center text-xs text-muted-foreground">Нет версий</p>
+            <p className="px-4 py-4 text-center font-sans text-xs text-muted-foreground">Нет версий</p>
           )}
           {versions.map((msg, i) => {
             const parts = (msg as unknown as { parts?: Array<{ type: string; text?: string }> }).parts ?? [];
@@ -202,10 +217,10 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
             const expanded = selectedMsgId === msg.id;
 
             return (
-              <div key={msg.id} className="rounded-sm">
+              <div key={msg.id}>
                 <button
                   type="button"
-                  className="flex w-full items-start gap-2 px-2 py-1.5 text-left transition-colors hover:bg-accent group"
+                  className="group flex w-full items-start gap-2 px-4 py-2 text-left transition-colors hover:bg-muted/60"
                   onClick={() => {
                     if (!directory) return;
                     setSelectedMsgId((id) => (id === msg.id ? null : msg.id));
@@ -213,11 +228,11 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
                   disabled={revert.isPending}
                   title={directory ? "Показать изменения файлов (diff)" : "Укажите директорию лабы для diff"}
                 >
-                  <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    {expanded ? <ChevronDown className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
+                  <div className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-muted-foreground">
+                    {expanded ? <Hi icon={ArrowDown01Icon} size={16} /> : <Hi icon={BotIcon} size={16} />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium">
+                    <p className={`font-sans text-xs ${expanded ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}>
                       v{vNum}
                       {meta.mode && (
                         <span className="ml-1.5 rounded bg-muted px-1 py-0.5 font-mono text-[10px] font-normal text-muted-foreground">
@@ -230,24 +245,24 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{description}</p>
+                    <p className="truncate font-sans text-xs text-muted-foreground">{description}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {ts && (
-                      <span className="text-[10px] text-muted-foreground/60">{formatTime(ts)}</span>
+                      <span className="font-sans text-[10px] text-muted-foreground/80">{formatTime(ts)}</span>
                     )}
                   </div>
                 </button>
-                <div className="flex justify-end px-2 pb-1">
+                <div className="flex justify-end px-4 pb-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 gap-1 text-[10px] text-muted-foreground"
+                    className="h-6 gap-1 font-sans text-[10px] text-muted-foreground hover:text-foreground"
                     type="button"
                     disabled={revert.isPending}
                     onClick={() => revert.mutate({ sessionId, messageId: msg.id, directory })}
                   >
-                    <RotateCcw className="h-2.5 w-2.5" />
+                    <Hi icon={Rotate01Icon} size={14} />
                     Откат
                   </Button>
                 </div>
@@ -266,28 +281,28 @@ export function VersionList({ sessionId, directory }: VersionListProps) {
               <button
                 key={msg.id}
                 type="button"
-                className="flex w-full items-start gap-2 rounded-sm px-2 py-1.5 text-left transition-colors hover:bg-accent group opacity-60 hover:opacity-100"
+                className="group flex w-full items-start gap-2 px-4 py-2 text-left opacity-70 transition-colors hover:bg-muted/60 hover:opacity-100"
                 onClick={() => revert.mutate({ sessionId, messageId: msg.id, directory })}
                 disabled={revert.isPending}
                 title="Откатиться к этому запросу"
               >
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
-                  <User className="h-3 w-3" />
+                <div className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-muted-foreground">
+                  <Hi icon={UserIcon} size={16} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium">
+                  <p className="font-sans text-xs font-medium text-muted-foreground">
                     запрос {i + 1}
                     {meta.agent && (
                       <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">@{meta.agent}</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{description}</p>
+                  <p className="truncate font-sans text-xs text-muted-foreground">{description}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   {ts && (
-                    <span className="text-[10px] text-muted-foreground/60">{formatTime(ts)}</span>
+                    <span className="font-sans text-[10px] text-muted-foreground/70">{formatTime(ts)}</span>
                   )}
-                  <RotateCcw className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Hi icon={Rotate01Icon} size={14} className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
               </button>
             );

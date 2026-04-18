@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import MonacoEditor, { useMonaco, type BeforeMount } from "@monaco-editor/react";
-import { Loader2, Save, Check, AlertCircle } from "lucide-react";
+import { AlertCircleIcon, Loading03Icon, Tick02Icon, FloppyDiskIcon } from "@hugeicons/core-free-icons";
+import { Hi } from "@/components/ui/hi";
 import { Button } from "@/components/ui/button";
 import { useFileContent, qk } from "@/lib/opencode-client";
 import { useConnectionStore } from "@/stores/connection";
@@ -137,40 +138,53 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="flex h-full items-center justify-center bg-background">
+        <span className="inline-flex animate-spin text-muted-foreground">
+          <Hi icon={Loading03Icon} size={22} />
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* File info bar */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-b bg-muted/20 px-3 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-mono text-muted-foreground truncate">{fileName}</span>
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border bg-muted px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-mono text-xs text-muted-foreground">{fileName}</span>
           {isDirty && !saveError && (
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" title="Несохранённые изменения" />
+            <span className="size-1.5 shrink-0 rounded-full bg-amber-500" title="Несохранённые изменения" />
           )}
           {saveError && (
-            <span className="flex items-center gap-1 text-xs text-destructive">
-              <AlertCircle className="h-3 w-3" />{saveError}
+            <span className="flex items-center gap-1 font-sans text-xs text-destructive">
+              <Hi icon={AlertCircleIcon} size={14} />
+              {saveError}
             </span>
           )}
         </div>
         <Button
           variant="ghost" size="sm"
-          className="h-6 gap-1.5 px-2 text-xs shrink-0"
+          className="h-7 shrink-0 gap-1.5 px-2 font-sans text-xs text-foreground hover:bg-background"
           onClick={handleSave}
           disabled={!isDirty || isSaving}
           title="Сохранить (Ctrl+S)"
         >
           {justSaved ? (
-            <><Check className="h-3 w-3 text-green-500" />Сохранено</>
+            <>
+              <Hi icon={Tick02Icon} size={16} className="text-emerald-600" />
+              Сохранено
+            </>
           ) : isSaving ? (
-            <><Loader2 className="h-3 w-3 animate-spin" />Сохранение</>
+            <>
+              <span className="inline-flex animate-spin">
+                <Hi icon={Loading03Icon} size={16} />
+              </span>
+              Сохранение
+            </>
           ) : (
-            <><Save className="h-3 w-3" />Сохранить</>
+            <>
+              <Hi icon={FloppyDiskIcon} size={16} />
+              Сохранить
+            </>
           )}
         </Button>
       </div>
@@ -186,7 +200,7 @@ export function CodeEditor({ filePath, directory }: CodeEditorProps) {
           onChange={(val) => setLocalContent(val ?? "")}
           options={{
             fontSize: 13,
-            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+            fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
             lineHeight: 20,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,

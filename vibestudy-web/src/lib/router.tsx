@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { NewLabPage } from "@/components/layout/new-lab-page";
 import { WorkspacePage } from "@/components/layout/workspace-page";
 import { SettingsPage } from "@/components/layout/settings-page";
+import { parseSettingsTab } from "@/components/layout/settings-nav";
 import { OnboardingPage } from "@/components/onboarding/onboarding-page";
 import { useProfileStore } from "@/stores/profile";
 
@@ -79,6 +80,9 @@ const WorkspaceRoute = createRoute({
 const SettingsRoute = createRoute({
   getParentRoute: () => AppRoute,
   path: "/settings",
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: parseSettingsTab(search.tab),
+  }),
   component: SettingsPage,
 });
 

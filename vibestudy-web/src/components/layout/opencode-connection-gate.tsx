@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Loader2, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConnectionStore } from "@/stores/connection";
@@ -8,8 +8,7 @@ const RETRIES = 45;
 const DELAY_MS = 600;
 
 export function OpenCodeConnectionGate() {
-  const router = useRouter();
-  const path = router.state.location.pathname;
+  const path = useLocation({ select: (l) => l.pathname });
   const connected = useConnectionStore((s) => s.connection.connected);
   const baseUrl = useConnectionStore((s) => s.connection.baseUrl);
   const connect = useConnectionStore((s) => s.connect);
@@ -80,7 +79,9 @@ export function OpenCodeConnectionGate() {
               Повторить
             </Button>
             <Button size="sm" variant="outline" asChild>
-              <Link to="/settings">Настройки подключения</Link>
+              <Link to="/settings" search={{ tab: "local" }}>
+                Настройки подключения
+              </Link>
             </Button>
           </div>
         </>

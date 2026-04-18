@@ -8,15 +8,16 @@ import {
   useContext,
 } from "react";
 import {
-  ChevronRight,
-  ChevronDown,
-  File,
-  Folder,
-  FolderOpen,
-  Loader2,
-} from "lucide-react";
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  File01Icon,
+  Folder01Icon,
+  FolderOpenIcon,
+  Loading03Icon,
+} from "@hugeicons/core-free-icons";
 import { useQueryClient, useQueries } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Hi } from "@/components/ui/hi";
 import { useWorkspaceStore } from "@/stores/workspace";
 import {
   useFileList,
@@ -160,32 +161,42 @@ function TreeNodeItem({
     registerExpanded(node.path);
   }, [isDir, open, node.path, registerExpanded]);
 
+  const pad = depth === 0 ? 16 : 20 + (depth - 1) * 12;
+
   return (
     <div>
       <button
         type="button"
-        className={`flex w-full items-center gap-1.5 rounded-sm py-[3px] text-sm transition-colors hover:bg-accent ${
-          isActive ? "bg-accent text-accent-foreground" : "text-foreground"
-        }`}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        className={`flex w-full items-center gap-2 py-2 text-left font-sans text-[13px] transition-colors ${
+          isActive
+            ? "bg-accent font-medium text-accent-foreground"
+            : isDir
+              ? "text-muted-foreground hover:bg-muted"
+              : "text-foreground hover:bg-muted"
+        } ${isActive && isDir ? "text-foreground" : ""}`}
+        style={{ paddingLeft: pad, paddingRight: 16 }}
         onClick={() => (isDir ? setOpen((v) => !v) : onSelectFile(node.path))}
       >
         {isDir ? (
           <>
-            {open
-              ? <ChevronDown  className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-            {open
-              ? <FolderOpen className="h-4 w-4 shrink-0 text-primary/70" />
-              : <Folder     className="h-4 w-4 shrink-0 text-primary/70" />}
+            {open ? (
+              <Hi icon={ArrowDown01Icon} size={16} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+            ) : (
+              <Hi icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
+            )}
+            {open ? (
+              <Hi icon={FolderOpenIcon} size={18} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+            ) : (
+              <Hi icon={Folder01Icon} size={18} className="text-muted-foreground" />
+            )}
           </>
         ) : (
           <>
-            <span className="w-3.5 shrink-0" />
-            <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="size-[18px] shrink-0" />
+            <Hi icon={File01Icon} size={18} className="text-muted-foreground" />
           </>
         )}
-        <span className="truncate">{node.name}</span>
+        <span className="min-w-0 truncate">{node.name}</span>
       </button>
 
       {isDir && open && node.children.map((child) => (
@@ -290,19 +301,21 @@ export function FileTree({ directory, sessionId }: FileTreeProps) {
 
   return (
     <RegisterFolderContext.Provider value={registerExpanded}>
-      <div className="flex h-full flex-col">
-        <div className="flex h-9 shrink-0 items-center justify-between border-b px-3">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+      <div className="flex h-full flex-col bg-background">
+        <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-4">
+          <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             Файлы
           </span>
           {connected && (rootLoading || subFetching) && (
-            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            <span className="inline-flex animate-spin text-muted-foreground">
+              <Hi icon={Loading03Icon} size={14} />
+            </span>
           )}
         </div>
-        <ScrollArea className="flex-1">
-          <div className="p-1">
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="pb-2">
             {!connected && (
-              <p className="px-2 py-1 text-[11px] text-muted-foreground/60">
+              <p className="px-4 py-1 font-sans text-[11px] text-muted-foreground">
                 Нет подключения — mock данные
               </p>
             )}
